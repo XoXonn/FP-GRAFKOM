@@ -16,9 +16,9 @@ let lightsOn = true;
 let toggleableLights = []; // Array to hold lights we can turn off
 
 // --- MODIFICATION: Room boundaries for collision ---
-const roomWidth = 22;
-const roomLength = 34;
-const roomHeight = 10;
+const roomWidth = 28; 
+const roomLength = 36; 
+const roomHeight = 11; 
 const collisionPadding = 0.5; // How far from the wall we stop
 const boundaries = {
     xMin: -roomWidth / 2 + collisionPadding,
@@ -47,7 +47,7 @@ function init() {
 
     // Basic Setup
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f5);
+    scene.background = new THREE.Color(0xfafafa);
 
     camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
     // Start at human height, near the "front" of the room
@@ -132,13 +132,13 @@ function init() {
     document.addEventListener('keyup', onKeyUp);
 
     // --- Lighting ---
-    // Ambient light (won't be toggled, so room is never pitch black)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Dimmer
+    // Very dim ambient light (room is dark when lights are off)
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
     scene.add(ambientLight);
 
-    // Main directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(5, 20, 10);
+    // Main directional light (simulating natural daylight from front door - NOT toggleable)
+    const directionalLight = new THREE.DirectionalLight(0xfff5e6, 0.3);
+    directionalLight.position.set(-8, 12, 18); // From front-left where door is
     directionalLight.castShadow = true;
 
     directionalLight.shadow.mapSize.width = 2048;
@@ -147,60 +147,32 @@ function init() {
     directionalLight.shadow.camera.right = 25;
     directionalLight.shadow.camera.top = 25;
     directionalLight.shadow.camera.bottom = -25;
-    // ... (shadow camera settings)
     scene.add(directionalLight);
-    toggleableLights.push(directionalLight); // Add to toggle list
 
-    // Recessed ceiling spotlights
-    const spotLightPositions = [
-        [-8, 0], [-4, 0], [0, 0], [4, 0], [8, 0],
-        [-8, -8], [-4, -8], [0, -8], [4, -8], [8, -8],
-        [-8, 8], [-4, 8], [0, 8], [4, 8], [8, 8]
-    ];
-
-    spotLightPositions.forEach(([x, z]) => {
-        const spotLight = new THREE.SpotLight(0xffffff, 0.5); // Brighter spots
-        spotLight.position.set(x, roomHeight - 0.5, z);
-        spotLight.angle = Math.PI / 3;
-        spotLight.penumbra = 0.5;
-        spotLight.decay = 1.5;
-        spotLight.distance = 25;
-
-        scene.add(spotLight);
-        toggleableLights.push(spotLight); // Add to toggle list
-        
-        const lightGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 16);
-        const lightMat = new THREE.MeshStandardMaterial({ 
-            color: 0xffffff, 
-            emissive: 0xffffff,
-            emissiveIntensity: 1 
-        });
-        const lightMesh = new THREE.Mesh(lightGeo, lightMat);
-        lightMesh.position.set(x, roomHeight - 0.15, z);
-        scene.add(lightMesh);
-    });
-
-    // --- Materials (Same as before) ---
+    // --- Materials ---
     const floorMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xe8dcc8,
-        roughness: 0.3,
-        metalness: 0.2 
+        color: 0xf8f8f8,
+        roughness: 0.1,
+        metalness: 0.05,
+        envMapIntensity: 0.5
     });
     const wallMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xfafafa,
-        roughness: 0.9
+        color: 0xffffff,
+        roughness: 0.85
     });
     const accentMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xc9a87c,
-        roughness: 0.8
+        color: 0xd4b896,
+        roughness: 0.7
     });
     const deskMaterial = new THREE.MeshStandardMaterial({ 
-        color: 0xf5f5f5,
-        roughness: 0.6 
+        color: 0xe8dcc0,
+        roughness: 0.6,
+        metalness: 0.0
     });
     const legMaterial = new THREE.MeshStandardMaterial({ 
         color: 0xffffff,
-        roughness: 0.5
+        roughness: 0.4,
+        metalness: 0.1
     });
     const chairSeatMaterial = new THREE.MeshStandardMaterial({ 
         color: 0x0066cc,
@@ -232,11 +204,208 @@ function init() {
     gridHelper.position.y = 0.01;
     scene.add(gridHelper);
 
-    const wallGeoBack = new THREE.BoxGeometry(roomWidth, roomHeight, 0.3);
-    const wallBack = new THREE.Mesh(wallGeoBack, wallMaterial);
-    wallBack.position.set(0, roomHeight / 2, -roomLength / 2);
-    wallBack.receiveShadow = true;
-    scene.add(wallBack);
+    // Back wall with window in the middle 
+    const windowWidth = 16; // Width for 6 curtain panels
+    const windowHeight = 5.5; 
+    const windowBottomHeight = 3.5; // Window starts above table height (table is ~2.9)
+    
+    // Left section of back wall
+    const backWallLeftWidth = (roomWidth - windowWidth) / 2;
+    const backWallLeft = new THREE.Mesh(
+        new THREE.BoxGeometry(backWallLeftWidth, roomHeight, 0.3),
+        wallMaterial
+    );
+    backWallLeft.position.set(-roomWidth / 2 + backWallLeftWidth / 2, roomHeight / 2, -roomLength / 2);
+    backWallLeft.receiveShadow = true;
+    scene.add(backWallLeft);
+    
+    // Right section of back wall
+    const backWallRight = new THREE.Mesh(
+        new THREE.BoxGeometry(backWallLeftWidth, roomHeight, 0.3),
+        wallMaterial
+    );
+    backWallRight.position.set(roomWidth / 2 - backWallLeftWidth / 2, roomHeight / 2, -roomLength / 2);
+    backWallRight.receiveShadow = true;
+    scene.add(backWallRight);
+    
+    // Top section above window
+    const topWallHeight = roomHeight - (windowBottomHeight + windowHeight);
+    const backWallTop = new THREE.Mesh(
+        new THREE.BoxGeometry(windowWidth, topWallHeight, 0.3),
+        wallMaterial
+    );
+    backWallTop.position.set(0, windowBottomHeight + windowHeight + topWallHeight / 2, -roomLength / 2);
+    backWallTop.receiveShadow = true;
+    scene.add(backWallTop);
+    
+    // Bottom section below window
+    const backWallBottom = new THREE.Mesh(
+        new THREE.BoxGeometry(windowWidth, windowBottomHeight, 0.3),
+        wallMaterial
+    );
+    backWallBottom.position.set(0, windowBottomHeight / 2, -roomLength / 2);
+    backWallBottom.receiveShadow = true;
+    scene.add(backWallBottom);
+    
+    // Window frame
+    const windowFrameMaterial = new THREE.MeshStandardMaterial({
+        color: 0xcccccc,
+        roughness: 0.5,
+        metalness: 0.3
+    });
+    
+    const frameThick = 0.08;
+    const windowFrameDepth = 0.15;
+    
+    // Window outer frame
+    const windowFrameTop = new THREE.Mesh(
+        new THREE.BoxGeometry(windowWidth, frameThick, windowFrameDepth),
+        windowFrameMaterial
+    );
+    windowFrameTop.position.set(0, windowBottomHeight + windowHeight - frameThick / 2, -roomLength / 2 + 0.08);
+    scene.add(windowFrameTop);
+    
+    const windowFrameBottom = new THREE.Mesh(
+        new THREE.BoxGeometry(windowWidth, frameThick, windowFrameDepth),
+        windowFrameMaterial
+    );
+    windowFrameBottom.position.set(0, windowBottomHeight + frameThick / 2, -roomLength / 2 + 0.08);
+    scene.add(windowFrameBottom);
+    
+    // 6 Rolling curtains (vertical panels) - same color as walls
+    const curtainWidth = windowWidth / 6;
+    const curtainMaterial = new THREE.MeshStandardMaterial({
+        color: 0xffffff, // Same as wall color
+        roughness: 0.85,
+        side: THREE.DoubleSide
+    });
+    
+    for (let i = 0; i < 6; i++) {
+        const curtainGeo = new THREE.PlaneGeometry(curtainWidth - 0.1, windowHeight - 0.2);
+        const curtain = new THREE.Mesh(curtainGeo, curtainMaterial);
+        const xPos = -windowWidth / 2 + curtainWidth / 2 + i * curtainWidth;
+        curtain.position.set(xPos, windowBottomHeight + windowHeight / 2, -roomLength / 2 + 0.1);
+        curtain.receiveShadow = true;
+        curtain.castShadow = true;
+        scene.add(curtain);
+    }
+    
+    // Horizontal light brown pole above curtains (full width)
+    const poleGeo = new THREE.CylinderGeometry(0.05, 0.05, roomWidth, 16);
+    const poleMat = new THREE.MeshStandardMaterial({ 
+        color: 0xd4b896, // Light brown accent color
+        roughness: 0.6,
+        metalness: 0.1
+    });
+    const pole = new THREE.Mesh(poleGeo, poleMat);
+    pole.rotation.z = Math.PI / 2;
+    pole.position.set(0, windowBottomHeight + windowHeight + 0.15, -roomLength / 2 + 0.12);
+    scene.add(pole);
+    
+    // Front wall with door opening on the left
+    const doorWidth = 6;
+    const doorHeight = 7;
+    const doorX = -roomWidth / 2 + doorWidth / 2 + 3.5; 
+    
+    // Wall sections around door
+    // Right section of front wall
+    const frontWallRightWidth = roomWidth / 2 - doorWidth / 2 - 2;
+    const frontWallRight = new THREE.Mesh(
+        new THREE.BoxGeometry(frontWallRightWidth, roomHeight, 0.3),
+        wallMaterial
+    );
+    frontWallRight.position.set(roomWidth / 2 - frontWallRightWidth / 2, roomHeight / 2, roomLength / 2);
+    frontWallRight.receiveShadow = true;
+    scene.add(frontWallRight);
+    
+    // Top section above door
+    const frontWallTop = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth, roomHeight - doorHeight, 0.3),
+        wallMaterial
+    );
+    frontWallTop.position.set(doorX, roomHeight - (roomHeight - doorHeight) / 2, roomLength / 2);
+    frontWallTop.receiveShadow = true;
+    scene.add(frontWallTop);
+    
+    // Left section of front wall
+    const frontWallLeftWidth = -roomWidth / 2 + doorX - doorWidth / 2;
+    if (frontWallLeftWidth > 0) {
+        const frontWallLeft = new THREE.Mesh(
+            new THREE.BoxGeometry(frontWallLeftWidth, roomHeight, 0.3),
+            wallMaterial
+        );
+        frontWallLeft.position.set(-roomWidth / 2 + frontWallLeftWidth / 2, roomHeight / 2, roomLength / 2);
+        frontWallLeft.receiveShadow = true;
+        scene.add(frontWallLeft);
+    }
+    
+    // Double glass doors with frame
+    const glassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xccddff,
+        transparent: true,
+        opacity: 0.3,
+        roughness: 0.1,
+        metalness: 0.0,
+        transmission: 0.9,
+        thickness: 0.5
+    });
+    
+    const doorFrameMaterial = new THREE.MeshStandardMaterial({
+        color: 0xdddddd,
+        roughness: 0.5,
+        metalness: 0.3
+    });
+    
+    // Door frame
+    const frameThickness = 0.15;
+    const frameDepth = 0.2;
+    
+    // Left door glass
+    const leftDoorGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth / 2 - frameThickness * 1.5, doorHeight - frameThickness * 2, 0.05),
+        glassMaterial
+    );
+    leftDoorGlass.position.set(doorX - doorWidth / 4, doorHeight / 2, roomLength / 2 - 0.1);
+    scene.add(leftDoorGlass);
+    
+    // Right door glass
+    const rightDoorGlass = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth / 2 - frameThickness * 1.5, doorHeight - frameThickness * 2, 0.05),
+        glassMaterial
+    );
+    rightDoorGlass.position.set(doorX + doorWidth / 4, doorHeight / 2, roomLength / 2 - 0.1);
+    scene.add(rightDoorGlass);
+    
+    // Door frame - vertical sides
+    const leftFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, doorHeight, frameDepth),
+        doorFrameMaterial
+    );
+    leftFrame.position.set(doorX - doorWidth / 2 + frameThickness / 2, doorHeight / 2, roomLength / 2);
+    scene.add(leftFrame);
+    
+    const rightFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, doorHeight, frameDepth),
+        doorFrameMaterial
+    );
+    rightFrame.position.set(doorX + doorWidth / 2 - frameThickness / 2, doorHeight / 2, roomLength / 2);
+    scene.add(rightFrame);
+    
+    // Door frame - top
+    const topFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth, frameThickness, frameDepth),
+        doorFrameMaterial
+    );
+    topFrame.position.set(doorX, doorHeight - frameThickness / 2, roomLength / 2);
+    scene.add(topFrame);
+    
+    // Center divider
+    const centerDivider = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, doorHeight, frameDepth),
+        doorFrameMaterial
+    );
+    centerDivider.position.set(doorX, doorHeight / 2, roomLength / 2);
+    scene.add(centerDivider);
     
     // ... (All other room geometry: TV, panels, walls, ceiling, clock, AC, logo) ...
     
@@ -314,37 +483,198 @@ function init() {
     scene.add(wallRightGroup);
     
     // ... (Add TV, Ceiling, Clock, AC, Logo objects here) ...
-    // Example: TV Screen
-    const tvScreenGeo = new THREE.BoxGeometry(7, 4.5, 0.15);
-    const tvScreen = new THREE.Mesh(tvScreenGeo, monitorMaterial);
-    tvScreen.position.set(0, roomHeight / 2 + 0.5, -roomLength / 2 + 0.12);
-    scene.add(tvScreen);
+    // TV Screen with stand (in front of middle tables)
+    const tvGroup = new THREE.Group();
     
-    // (Pasting the rest of the geometry)
-    const panelWidth = 1.0;
-    const panelHeight = roomHeight;
-    const panelGeo = new THREE.BoxGeometry(panelWidth, panelHeight, 0.25);
-    const panelMaterial = new THREE.MeshStandardMaterial({ color: 0xe0d0b0 });
-    const panelPositions = [-9, -5, 5, 9];
-    panelPositions.forEach(xPos => {
-        const panel = new THREE.Mesh(panelGeo, panelMaterial);
-        panel.position.set(xPos, roomHeight / 2, -roomLength / 2 + 0.15);
-        scene.add(panel);
+    // TV Screen
+    const tvScreenGeo = new THREE.BoxGeometry(7, 4.0, 0.15);
+    const tvScreen = new THREE.Mesh(tvScreenGeo, monitorMaterial);
+    tvScreen.position.set(0, 5.5, 0); // Higher position on stand
+    tvGroup.add(tvScreen);
+    
+    // TV Stand (vertical pole)
+    const standGeo = new THREE.CylinderGeometry(0.15, 0.15, 5, 16);
+    const standMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
+    const stand = new THREE.Mesh(standGeo, standMat);
+    stand.position.set(0, 2.5, -0.2); // Moved back behind the screen
+    tvGroup.add(stand);
+    
+    // TV Base (floor stand)
+    const baseGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.15, 32);
+    const base = new THREE.Mesh(baseGeo, standMat);
+    base.position.set(0, 0.08, -0.2); // Moved back to align with stand
+    tvGroup.add(base);
+    
+    // Position TV in front of middle tables (facing them)
+    tvGroup.position.set(0, 0, -8);
+    scene.add(tvGroup);
+    
+    // Step ceiling design with border frame (like in photo)
+    const ceilingBorderWidth = 2.5;
+    const ceilingBorderDepth = 0.4;
+    const innerCeilingDepth = 0.3;
+
+    // Border lights (on the stepped border area - lower position)
+    const borderLightPositions = [
+        // Back side (4 lights)
+        [-6, -12], [-2, -12], [2, -12], [6, -12],
+        // Front side (4 lights)
+        [-6, 12], [-2, 12], [2, 12], [6, 12]
+    ];
+
+    borderLightPositions.forEach(([x, z]) => {
+        // Point light for each bulb (like real light bulb)
+        const pointLight = new THREE.PointLight(0xfff8f0, 1.2, 18, 2);
+        pointLight.position.set(x, roomHeight - ceilingBorderDepth - 0.5, z);
+        pointLight.castShadow = true;
+        pointLight.shadow.mapSize.width = 512;
+        pointLight.shadow.mapSize.height = 512;
+
+        scene.add(pointLight);
+        toggleableLights.push(pointLight);
+        
+        // Recessed ceiling fixture (rim)
+        const fixtureRimGeo = new THREE.CylinderGeometry(0.22, 0.25, 0.15, 16);
+        const fixtureRimMat = new THREE.MeshStandardMaterial({ 
+            color: 0xe8e8e8,
+            roughness: 0.4,
+            metalness: 0.3
+        });
+        const fixtureRim = new THREE.Mesh(fixtureRimGeo, fixtureRimMat);
+        fixtureRim.position.set(x, roomHeight - ceilingBorderDepth - innerCeilingDepth - 0.05, z);
+        scene.add(fixtureRim);
+        
+        // Light bulb (emissive sphere)
+        const bulbGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const bulbMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff,
+            emissive: 0xfff8f0,
+            emissiveIntensity: 0.8,
+            roughness: 0.2,
+            metalness: 0.0
+        });
+        const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
+        bulbMesh.position.set(x, roomHeight - ceilingBorderDepth - innerCeilingDepth - 0.25, z);
+        scene.add(bulbMesh);
+        
+        // Store bulb reference for toggling emissive
+        toggleableLights.push({ bulb: bulbMesh, originalEmissive: 0xfff8f0, originalIntensity: 0.8 });
+    });
+
+    // Center ceiling lights (on the higher center part - 6 lights: 3 left, 3 right)
+    const centerLightPositions = [
+        // Left side (3 lights)
+        [-10, -6], [-10, 0], [-10, 6],
+        // Right side (3 lights)
+        [10, -6], [10, 0], [10, 6]
+    ];
+
+    centerLightPositions.forEach(([x, z]) => {
+        // Point light for each bulb (like real light bulb)
+        const pointLight = new THREE.PointLight(0xfff8f0, 1.2, 18, 2);
+        pointLight.position.set(x, roomHeight - 0.5, z);
+        pointLight.castShadow = true;
+        pointLight.shadow.mapSize.width = 512;
+        pointLight.shadow.mapSize.height = 512;
+
+        scene.add(pointLight);
+        toggleableLights.push(pointLight);
+        
+        // Recessed ceiling fixture (rim)
+        const fixtureRimGeo = new THREE.CylinderGeometry(0.22, 0.25, 0.15, 16);
+        const fixtureRimMat = new THREE.MeshStandardMaterial({ 
+            color: 0xe8e8e8,
+            roughness: 0.4,
+            metalness: 0.3
+        });
+        const fixtureRim = new THREE.Mesh(fixtureRimGeo, fixtureRimMat);
+        fixtureRim.position.set(x, roomHeight - 0.08, z);
+        scene.add(fixtureRim);
+        
+        // Light bulb (emissive sphere)
+        const bulbGeo = new THREE.SphereGeometry(0.12, 16, 16);
+        const bulbMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff,
+            emissive: 0xfff8f0,
+            emissiveIntensity: 0.8,
+            roughness: 0.2,
+            metalness: 0.0
+        });
+        const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
+        bulbMesh.position.set(x, roomHeight - 0.25, z);
+        scene.add(bulbMesh);
+        
+        // Store bulb reference for toggling emissive
+        toggleableLights.push({ bulb: bulbMesh, originalEmissive: 0xfff8f0, originalIntensity: 0.8 });
     });
     
-    const recessDepth = 0.4;
-    const recessWidth = roomWidth - 5;
-    const recessLength = roomLength - 8;
-    const recessGeo = new THREE.BoxGeometry(recessWidth, recessDepth, recessLength);
-    const recessMaterial = new THREE.MeshStandardMaterial({ color: 0xe8e8e8 });
-    const recess = new THREE.Mesh(recessGeo, recessMaterial);
-    recess.position.set(0, roomHeight - recessDepth/2, 0);
-    scene.add(recess);
+    // Outer ceiling border frame
     const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomLength);
-    const ceiling = new THREE.Mesh(ceilingGeometry, wallMaterial);
+    const ceilingMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xffffff,
+        roughness: 0.8,
+        metalness: 0.0
+    });
+    const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
     ceiling.position.y = roomHeight;
     ceiling.rotation.x = Math.PI / 2;
+    ceiling.receiveShadow = true;
     scene.add(ceiling);
+    
+    // Step down border (running around the perimeter)
+    const borderMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xe8e8e8,
+        roughness: 0.7
+    });
+    
+    // Top border (front)
+    const borderTop = new THREE.Mesh(
+        new THREE.BoxGeometry(roomWidth, ceilingBorderDepth, ceilingBorderWidth),
+        borderMaterial
+    );
+    borderTop.position.set(0, roomHeight - ceilingBorderDepth/2, roomLength/2 - ceilingBorderWidth/2);
+    scene.add(borderTop);
+    
+    // Bottom border (back)
+    const borderBottom = new THREE.Mesh(
+        new THREE.BoxGeometry(roomWidth, ceilingBorderDepth, ceilingBorderWidth),
+        borderMaterial
+    );
+    borderBottom.position.set(0, roomHeight - ceilingBorderDepth/2, -roomLength/2 + ceilingBorderWidth/2);
+    scene.add(borderBottom);
+    
+    // Left border
+    const borderLeft = new THREE.Mesh(
+        new THREE.BoxGeometry(ceilingBorderWidth, ceilingBorderDepth, roomLength - ceilingBorderWidth * 2),
+        borderMaterial
+    );
+    borderLeft.position.set(-roomWidth/2 + ceilingBorderWidth/2, roomHeight - ceilingBorderDepth/2, 0);
+    scene.add(borderLeft);
+    
+    // Right border
+    const borderRight = new THREE.Mesh(
+        new THREE.BoxGeometry(ceilingBorderWidth, ceilingBorderDepth, roomLength - ceilingBorderWidth * 2),
+        borderMaterial
+    );
+    borderRight.position.set(roomWidth/2 - ceilingBorderWidth/2, roomHeight - ceilingBorderDepth/2, 0);
+    scene.add(borderRight);
+    
+    // Inner recessed ceiling (center area)
+    const innerCeilingWidth = roomWidth - ceilingBorderWidth * 2;
+    const innerCeilingLength = roomLength - ceilingBorderWidth * 2;
+    const innerCeilingMaterial = new THREE.MeshStandardMaterial({ 
+        color: 0xf5f5f5, 
+        roughness: 0.8,
+        metalness: 0.0
+    });
+    const innerCeiling = new THREE.Mesh(
+        new THREE.PlaneGeometry(innerCeilingWidth, innerCeilingLength),
+        innerCeilingMaterial
+    );
+    innerCeiling.position.set(0, roomHeight - ceilingBorderDepth - innerCeilingDepth, 0);
+    innerCeiling.rotation.x = Math.PI / 2;
+    innerCeiling.receiveShadow = true;
+    scene.add(innerCeiling);
 
     const clockRadius = 0.4;
     const clockGeo = new THREE.CylinderGeometry(clockRadius, clockRadius, 0.1, 32);
@@ -373,14 +703,45 @@ function init() {
     minuteHand.rotation.x = Math.PI / 3;
     scene.add(minuteHand);
 
-    const acGeo = new THREE.BoxGeometry(2.8, 0.7, 0.9);
-    const acMaterial = new THREE.MeshStandardMaterial({ color: 0xf8f8f8 });
-    const ac1 = new THREE.Mesh(acGeo, acMaterial);
-    ac1.position.set(4, roomHeight - 0.45, -roomLength / 2 + 0.55);
-    scene.add(ac1);
-    const ac2 = new THREE.Mesh(acGeo, acMaterial);
-    ac2.position.set(-4, roomHeight - 0.45, -roomLength / 2 + 0.55);
-    scene.add(ac2);
+    // Air Conditioner unit
+    const acGroup = new THREE.Group();
+    
+    // AC main body
+    const acBodyGeo = new THREE.BoxGeometry(3.5, 0.8, 0.6);
+    const acBodyMat = new THREE.MeshStandardMaterial({ 
+        color: 0xf5f5f5,
+        roughness: 0.3,
+        metalness: 0.2
+    });
+    const acBody = new THREE.Mesh(acBodyGeo, acBodyMat);
+    acBody.position.set(0, 0, 0);
+    acGroup.add(acBody);
+    
+    // AC front panel (darker)
+    const acPanelGeo = new THREE.BoxGeometry(3.4, 0.6, 0.02);
+    const acPanelMat = new THREE.MeshStandardMaterial({ 
+        color: 0xe0e0e0,
+        roughness: 0.4
+    });
+    const acPanel = new THREE.Mesh(acPanelGeo, acPanelMat);
+    acPanel.position.set(0, 0, 0.3);
+    acGroup.add(acPanel);
+    
+    // AC vents (horizontal lines)
+    const ventMat = new THREE.MeshStandardMaterial({ 
+        color: 0x333333,
+        roughness: 0.6
+    });
+    for (let i = 0; i < 5; i++) {
+        const ventGeo = new THREE.BoxGeometry(3.2, 0.03, 0.02);
+        const vent = new THREE.Mesh(ventGeo, ventMat);
+        vent.position.set(0, -0.2 + i * 0.1, 0.31);
+        acGroup.add(vent);
+    }
+    
+    // Position AC on back wall, center, attached to the horizontal pole
+    acGroup.position.set(0, windowBottomHeight + windowHeight + 0.8, -roomLength / 2 + 0.4);
+    scene.add(acGroup);
     
     // SE Logo
     const logoCanvas = document.createElement('canvas');
@@ -566,7 +927,7 @@ function createChair(x, y, z, rotation) {
         station.add(stand);
         const towerGeo = new THREE.BoxGeometry(0.45, 1.4, 1.6); // Tinggi tower = 1.4
         const tower = new THREE.Mesh(towerGeo, towerMaterial);
-        tower.position.set(0.95, 0.7, 0); 
+        tower.position.set(0.95, deskHeight - 2.2, 0); // Fixed: relative to deskHeight
         
         tower.castShadow = true; 
         station.add(tower);
@@ -593,63 +954,121 @@ function createChair(x, y, z, rotation) {
         top.castShadow = true; 
         top.receiveShadow = true; 
         desk.add(top);
-        const legGeo = new THREE.BoxGeometry(0.15, height, 0.15);
+        
+        // Legs 
+        const legHeight = height - 0.1; 
+        const legGeo = new THREE.BoxGeometry(0.15, legHeight, 0.15);
         const leg1 = new THREE.Mesh(legGeo, legMaterial);
-        leg1.position.set(-width/2 + 0.08, height/2, -depth/2 + 0.08);
+        leg1.position.set(-width/2 + 0.08, legHeight/2, -depth/2 + 0.08);
         desk.add(leg1);
         const leg2 = new THREE.Mesh(legGeo, legMaterial);
-        leg2.position.set(width/2 - 0.08, height/2, -depth/2 + 0.08);
+        leg2.position.set(width/2 - 0.08, legHeight/2, -depth/2 + 0.08);
         desk.add(leg2);
         const leg3 = new THREE.Mesh(legGeo, legMaterial);
-        leg3.position.set(-width/2 + 0.08, height/2, depth/2 - 0.08);
+        leg3.position.set(-width/2 + 0.08, legHeight/2, depth/2 - 0.08);
         desk.add(leg3);
         const leg4 = new THREE.Mesh(legGeo, legMaterial);
-        leg4.position.set(width/2 - 0.08, height/2, depth/2 - 0.08);
+        leg4.position.set(width/2 - 0.08, legHeight/2, depth/2 - 0.08);
         desk.add(leg4);
+        
+        // Horizontal connecting bars on the floor 
+        const barHeight = 0.08;
+        const barThickness = 0.15; 
+        
+        // Front horizontal bar (connecting leg1 and leg2)
+        const frontBarGeo = new THREE.BoxGeometry(width - 0.16, barHeight, barThickness);
+        const frontBar = new THREE.Mesh(frontBarGeo, legMaterial);
+        frontBar.position.set(0, barHeight/2, -depth/2 + 0.08);
+        desk.add(frontBar);
+        
+        // Back horizontal bar (connecting leg3 and leg4)
+        const backBarGeo = new THREE.BoxGeometry(width - 0.16, barHeight, barThickness);
+        const backBar = new THREE.Mesh(backBarGeo, legMaterial);
+        backBar.position.set(0, barHeight/2, depth/2 - 0.08);
+        desk.add(backBar);
+        
         return desk;
     }
 
-    // --- Layout Furniture (Same as before) ---
+    // --- Layout Furniture ---
     const deskHeight = 2.9;
+    const individualDeskWidth = 2.4; 
+    const individualDeskDepth = 3.6; 
 
-    const sideDeskLength = roomLength - 8; 
-    const sideDeskDepth = 2.4; 
-    const leftDesk = createDesk(sideDeskDepth, sideDeskLength, deskHeight);
-    leftDesk.position.set(-roomWidth / 2 + sideDeskDepth / 2, 0, 0);
-    scene.add(leftDesk);
-
-    const numSideStations = 7;
-    const sideSpacing = sideDeskLength / numSideStations;
-    for (let i = 0; i < numSideStations; i++) {
-        const zPos = -sideDeskLength / 2 + sideSpacing / 2 + i * sideSpacing;
-        const xPosDesk = -roomWidth / 2 + sideDeskDepth / 2;
-        createComputerStation(xPosDesk, deskHeight, zPos, Math.PI / 2); 
-        createChair(xPosDesk + sideDeskDepth / 2 + 0.6, 0, zPos, Math.PI / 2);
+    // LEFT WALL: 8 individual tables 
+    const numLeftTables = 8;
+    const leftStartZ = -12; 
+    const leftSpacingZ = individualDeskDepth; // Gap between tables 
+    
+    for (let i = 0; i < numLeftTables; i++) {
+        const zPos = leftStartZ + i * leftSpacingZ;
+        const xPos = -roomWidth / 2 + individualDeskWidth / 2 + 0.3;
+        
+        const desk = createDesk(individualDeskWidth, individualDeskDepth, deskHeight);
+        desk.position.set(xPos, 0, zPos);
+        scene.add(desk);
+        
+        createComputerStation(xPos, deskHeight, zPos, Math.PI / 2); 
+        createChair(xPos + individualDeskWidth / 2 + 0.6, 0, zPos, Math.PI / 2);
     }
 
-    const rightDesk = createDesk(sideDeskDepth, sideDeskLength, deskHeight);
-    rightDesk.position.set(roomWidth / 2 - sideDeskDepth / 2, 0, 0);
-    scene.add(rightDesk);
-
-    for (let i = 0; i < numSideStations; i++) {
-        const zPos = -sideDeskLength / 2 + sideSpacing / 2 + i * sideSpacing;
-        const xPosDesk = roomWidth / 2 - sideDeskDepth / 2;
-        createComputerStation(xPosDesk, deskHeight, zPos, -Math.PI / 2); 
-        createChair(xPosDesk - sideDeskDepth / 2 - 0.6, 0, zPos, -Math.PI / 2);
+    // RIGHT WALL: 8 individual tables
+    const numRightTables = 8;
+    
+    for (let i = 0; i < numRightTables; i++) {
+        const zPos = leftStartZ + i * leftSpacingZ;
+        const xPos = roomWidth / 2 - individualDeskWidth / 2 - 0.3;
+        
+        const desk = createDesk(individualDeskWidth, individualDeskDepth, deskHeight);
+        desk.position.set(xPos, 0, zPos);
+        scene.add(desk);
+        
+        createComputerStation(xPos, deskHeight, zPos, -Math.PI / 2); 
+        createChair(xPos - individualDeskWidth / 2 - 0.6, 0, zPos, -Math.PI / 2);
     }
 
-    const centerTableLength = 22;
-    const centerTableDepth = 3.8;
-    const centerTable = createDesk(centerTableDepth, centerTableLength, deskHeight);
-    centerTable.position.set(0, 0, 0); 
-    scene.add(centerTable);
+    // BACK WALL: 4 individual tables
+    const numBackTables = 4;
+    const backTableSpacingX = individualDeskDepth; 
+    const backStartX = -individualDeskDepth * 2 + individualDeskDepth / 2; // Center the 4 tables
+    
+    for (let i = 0; i < numBackTables; i++) {
+        const xPos = backStartX + i * backTableSpacingX;
+        const zPos = -roomLength / 2 + individualDeskWidth / 2 + 0.3; // Using width as depth now
+        
+        const desk = createDesk(individualDeskDepth, individualDeskWidth, deskHeight); // Swapped dimensions
+        desk.position.set(xPos, 0, zPos);
+        scene.add(desk);
+        
+        createComputerStation(xPos, deskHeight, zPos, 0); // Facing back wall (0 degrees)
+        createChair(xPos, 0, zPos + individualDeskWidth / 2 + 0.6, 0); // Chair behind desk
+    }
 
-    const numCenterChairs = 6;
-    const centerSpacing = centerTableLength / numCenterChairs;
-    for (let i = 0; i < numCenterChairs; i++) {
-        const zPos = -centerTableLength / 2 + centerSpacing / 2 + i * centerSpacing;
-        createChair(centerTableDepth / 2 + 1, 0, zPos, Math.PI / 2); 
-        createChair(-centerTableDepth / 2 - 1, 0, zPos, -Math.PI / 2); 
+    // CENTER: 4 tables facing 4 tables (8 total) 
+    const centerDeskWidth = individualDeskWidth; 
+    const centerDeskDepth = individualDeskDepth; 
+    const centerSpacingZ = individualDeskDepth; 
+    const centerStartZ = -5; 
+    const centerGap = 0; // Gap between left and right center tables
+    
+    for (let i = 0; i < 4; i++) {
+        const zPos = centerStartZ + i * centerSpacingZ;
+        
+        // Left side of center (4 tables) 
+        const xPosLeft = -centerGap / 2 - centerDeskWidth / 2;
+        const deskLeft = createDesk(centerDeskWidth, centerDeskDepth, deskHeight);
+        deskLeft.position.set(xPosLeft, 0, zPos);
+        scene.add(deskLeft);
+        
+        createChair(xPosLeft - centerDeskWidth / 2 - 0.6, 0, zPos, -Math.PI / 2); // Chair on LEFT side
+        
+        // Right side of center (4 tables) 
+        const xPosRight = centerGap / 2 + centerDeskWidth / 2;
+        const deskRight = createDesk(centerDeskWidth, centerDeskDepth, deskHeight);
+        deskRight.position.set(xPosRight, 0, zPos);
+        scene.add(deskRight);
+        
+        createChair(xPosRight + centerDeskWidth / 2 + 0.6, 0, zPos, Math.PI / 2); // Chair on RIGHT side
     }
 
     // Window resize
@@ -661,8 +1080,20 @@ function createChair(x, y, z, rotation) {
  */
 function toggleLights() {
     lightsOn = !lightsOn;
-    toggleableLights.forEach(light => {
-        light.visible = lightsOn;
+    toggleableLights.forEach(item => {
+        if (item.bulb) {
+            // Toggle bulb emissive
+            if (lightsOn) {
+                item.bulb.material.emissive.setHex(item.originalEmissive);
+                item.bulb.material.emissiveIntensity = item.originalIntensity;
+            } else {
+                item.bulb.material.emissive.setHex(0x000000);
+                item.bulb.material.emissiveIntensity = 0;
+            }
+        } else {
+            // Regular light toggle
+            item.visible = lightsOn;
+        }
     });
 }
 

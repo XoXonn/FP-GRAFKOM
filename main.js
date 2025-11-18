@@ -238,16 +238,23 @@ function init() {
     wallLeftBase.receiveShadow = true;
     wallLeftGroup.add(wallLeftBase);
 
-    const baseY = roomHeight * 0.7 - roomHeight / 2;
+    const centerLineY = 2.0; // Ditingkatkan dari 0.5 ke 1.0
     const bandThickness = 0.7;
-    const bandGap = 1.0; 
+    const bandGap = 1.0;
+    const extrusionDepth = 0.28;
+
+    // Path baru ini menggunakan 'centerLineY' (bukan baseY lagi)
     const topBandPath = [
-        { z: -roomLength / 2, y: baseY }, { z: -roomLength / 2 + 4, y: baseY },
-        { z: -roomLength / 2 + 7, y: baseY + 0.4 }, { z: -roomLength / 2 + 11, y: baseY - 0.2 },
-        { z: -roomLength / 2 + 15, y: baseY + 0.3 }, { z: roomLength / 2 - 8, y: baseY + 0.2 },
-        { z: roomLength / 2 - 4, y: baseY + 0.5 }, { z: roomLength / 2, y: baseY + 0.2 }
+        { z: -roomLength / 2,      y: centerLineY + bandThickness },       // Awal datar
+        { z: -roomLength / 2 + 3,  y: centerLineY + bandThickness },       // Masih datar
+        { z: -roomLength / 2 + 7,  y: centerLineY + bandThickness - 1.2 }, // Mulai turun lebih curam (ditingkatkan dari -0.8 ke -1.2)
+        { z: -roomLength / 2 + 13, y: centerLineY + bandThickness - 1.8 }, // Titik terendah yang lebih curam (ditingkatkan dari -1.2 ke -1.8)
+        { z: roomLength / 2 - 8,   y: centerLineY + bandThickness - 1.6 }, // Mulai naik lagi, tapi dari posisi lebih rendah (ditingkatkan dari -1.0 ke -1.6)
+        { z: roomLength / 2 - 3,   y: centerLineY + bandThickness - 0.7 }, // Naik lebih tinggi (ditingkatkan dari -0.2 ke -0.7)
+        { z: roomLength / 2,       y: centerLineY + bandThickness - 0.7 }  // Akhir datar (ditingkatkan dari -0.2 ke -0.7)
     ];
-    const extrudeSettings = { steps: 1, depth: 0.28, bevelEnabled: false };
+
+    const extrudeSettings = { steps: 1, depth: extrusionDepth, bevelEnabled: false };
 
     const accentTopGeo = new THREE.Shape();
     accentTopGeo.moveTo(topBandPath[0].z, topBandPath[0].y);

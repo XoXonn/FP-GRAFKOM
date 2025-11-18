@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software Engineering Computer Lab</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f0f0;
+            color: #333;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        #info {
+            position: absolute;
+            top: 10px;
+            left: 100px;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            font-size: 14px;
+        }
+        #stats {
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="info">
+        <strong>Software Engineering Lab</strong><br>
+        Drag to orbit, scroll to zoom
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/stats.js/r16/Stats.min.js"></script>
+
+    <script>
+        let scene, camera, renderer, controls, stats;
+
+        function init() {
+            // FPS Stats
+            stats = new Stats();
+            stats.domElement.id = 'stats'; 
+            document.body.appendChild(stats.domElement); 
+
+            // Basic Setup
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf5f5f5);
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 8, 16);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFShadowMap; 
+            document.body.appendChild(renderer.domElement);
+
+            // Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.target.set(0, 2, -3);
+            controls.maxPolarAngle = Math.PI / 2 - 0.1;
+            controls.minDistance = 5;
+            controls.maxDistance = 40;
+
+            // Room Dimensions - DEFINE FIRST
+            const roomWidth = 22;
+            const roomLength = 34;
+            const roomHeight = 10;
+
+            // Lighting - Multiple recessed ceiling lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+
+            // Main directional light (sunlight effect)
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            directionalLight.position.set(10, 15, 10);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048; 
+            directionalLight.shadow.mapSize.height = 2048; 
+            directionalLight.shadow.camera.near = 0.5;
+            directionalLight.shadow.camera.far = 50;
+            directionalLight.shadow.camera.left = -20;
+            directionalLight.shadow.camera.right = 20;
+            directionalLight.shadow.camera.top = 20;
+            directionalLight.shadow.camera.bottom = -20;
+            scene.add(directionalLight);
+
+            // Recessed ceiling spotlights
+            const spotLightPositions = [
+                [-8, 0], [-4, 0], [0, 0], [4, 0], [8, 0],
+                [-8, -8], [-4, -8], [0, -8], [4, -8], [8, -8],
+                [-8, 8], [-4, 8], [0, 8], [4, 8], [8, 8]
+            ];
+            
+            spotLightPositions.forEach(([x, z]) => {
+                const spotLight = new THREE.SpotLight(0xffffff, 0.3);
+                spotLight.position.set(x, roomHeight - 0.5, z);
+                spotLight.angle = Math.PI / 6;
+                spotLight.penumbra = 0.3;
+                spotLight.decay = 2;
+                spotLight.distance = 20;
+                scene.add(spotLight);
+                
+                // Visual representation of recessed light
+                const lightGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 16);
+                const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
+                const lightMesh = new THREE.Mesh(lightGeo, lightMat);
+                lightMesh.position.set(x, roomHeight - 0.15, z);
+                scene.add(lightMesh);
+            });
+
+            // Materials
+            const floorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xe8dcc8, // Cream/beige tile floor to match photos
+                roughness: 0.3,
+                metalness: 0.2 
+            });
+            const wallMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xfafafa,
+                roughness: 0.9
+            });
+            const accentMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xc9a87c, // Tan zigzag
+                roughness: 0.8
+            });
+            const deskMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xf5f5f5, // White/cream desks
+                roughness: 0.6 
+            });
+            const legMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xffffff, // White legs
+                roughness: 0.5
+            });
+            const chairSeatMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x0066cc, // Blue seat
+                roughness: 0.7 
+            });
+            const chairBackMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x0a0a0a, // Black perforated back
+                roughness: 0.6 
+            });
+            const monitorMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x0a0a0a,
+                roughness: 0.3,
+                metalness: 0.1
+            });
+            const towerMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0x1a1a1a,
+                roughness: 0.5
+            });
+
+            // Room Geometry
+            const floorGeometry = new THREE.PlaneGeometry(roomWidth, roomLength);
+            const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true; 
+            scene.add(floor);
+
+            // Add tile grid lines
+            const gridHelper = new THREE.GridHelper(roomLength, 40, 0xe0e0e0, 0xe8e8e8);
+            gridHelper.position.y = 0.01;
+            scene.add(gridHelper);
+
+            // Back Wall - complete coverage
+            const wallGeoBack = new THREE.BoxGeometry(roomWidth, roomHeight, 0.3);
+            const wallBack = new THREE.Mesh(wallGeoBack, wallMaterial);
+            wallBack.position.set(0, roomHeight / 2, -roomLength / 2);
+            wallBack.receiveShadow = true;
+            scene.add(wallBack);
+
+            // TV Screen on back wall
+            const tvScreenGeo = new THREE.BoxGeometry(7, 4.5, 0.15);
+            const tvScreen = new THREE.Mesh(tvScreenGeo, monitorMaterial);
+            tvScreen.position.set(0, roomHeight / 2 + 0.5, -roomLength / 2 + 0.12);
+            scene.add(tvScreen);
+
+            // Vertical panels on back wall
+            const panelWidth = 1.0;
+            const panelHeight = roomHeight;
+            const panelGeo = new THREE.BoxGeometry(panelWidth, panelHeight, 0.25);
+            const panelMaterial = new THREE.MeshStandardMaterial({ color: 0xe0d0b0 });
+            
+            const panelPositions = [-9, -5, 5, 9];
+            panelPositions.forEach(xPos => {
+                const panel = new THREE.Mesh(panelGeo, panelMaterial);
+                panel.position.set(xPos, roomHeight / 2, -roomLength / 2 + 0.15);
+                scene.add(panel);
+            });
+
+            // Left Wall with Zigzag Accent
+            const wallLeftGroup = new THREE.Group();
+            wallLeftGroup.position.set(-roomWidth / 2, roomHeight / 2, 0);
+            wallLeftGroup.rotation.y = Math.PI / 2;
+
+            const wallLeftBase = new THREE.Mesh(new THREE.BoxGeometry(roomLength, roomHeight, 0.3), wallMaterial);
+            wallLeftBase.receiveShadow = true;
+            wallLeftGroup.add(wallLeftBase);
+
+            // Zigzag accent shape - matches photo pattern exactly
+            const accentLeftGeo = new THREE.Shape();
+            const baseY = roomHeight * 0.65 - roomHeight/2;
+            const zigzagHeight = 0.9;
+            
+            // Start from left
+            accentLeftGeo.moveTo(-roomLength / 2, baseY);
+            
+            // Create the exact zigzag pattern from the photos
+            // Horizontal start
+            accentLeftGeo.lineTo(-roomLength / 2 + 3, baseY);
+            // Up diagonal
+            accentLeftGeo.lineTo(-roomLength / 2 + 6, baseY + 0.6);
+            // Down diagonal
+            accentLeftGeo.lineTo(-roomLength / 2 + 9, baseY);
+            // Up diagonal
+            accentLeftGeo.lineTo(-roomLength / 2 + 12, baseY + 0.6);
+            // Down diagonal
+            accentLeftGeo.lineTo(-roomLength / 2 + 15, baseY);
+            // Up diagonal
+            accentLeftGeo.lineTo(-roomLength / 2 + 18, baseY + 0.6);
+            // Long middle section relatively flat
+            accentLeftGeo.lineTo(roomLength / 2 - 10, baseY + 0.2);
+            // Up diagonal
+            accentLeftGeo.lineTo(roomLength / 2 - 7, baseY + 0.7);
+            // Down to end
+            accentLeftGeo.lineTo(roomLength / 2, baseY + 0.3);
+            
+            // Top edge back
+            accentLeftGeo.lineTo(roomLength / 2, baseY + zigzagHeight);
+            accentLeftGeo.lineTo(-roomLength / 2, baseY + zigzagHeight);
+            accentLeftGeo.lineTo(-roomLength / 2, baseY);
+
+            const extrudeSettings = {
+                steps: 1,
+                depth: 0.28,
+                bevelEnabled: false
+            };
+            const accentLeftMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(accentLeftGeo, extrudeSettings), accentMaterial);
+            accentLeftMesh.position.set(0.11, 0, 0);
+            wallLeftGroup.add(accentLeftMesh);
+            scene.add(wallLeftGroup);
+
+            // Right Wall with Zigzag Accent (Mirrored)
+            const wallRightGroup = new THREE.Group();
+            wallRightGroup.position.set(roomWidth / 2, roomHeight / 2, 0);
+            wallRightGroup.rotation.y = -Math.PI / 2;
+
+            const wallRightBase = new THREE.Mesh(new THREE.BoxGeometry(roomLength, roomHeight, 0.3), wallMaterial);
+            wallRightBase.receiveShadow = true;
+            wallRightGroup.add(wallRightBase);
+
+            // Right wall zigzag - mirrored pattern
+            const accentRightGeo = new THREE.Shape();
+            
+            // Start from left (mirrored, so starts high)
+            accentRightGeo.moveTo(-roomLength / 2, baseY + 0.3);
+            
+            // Mirror the left pattern
+            accentRightGeo.lineTo(-roomLength / 2 + 7, baseY + 0.7);
+            accentRightGeo.lineTo(-roomLength / 2 + 10, baseY + 0.2);
+            accentRightGeo.lineTo(roomLength / 2 - 18, baseY + 0.2);
+            accentRightGeo.lineTo(roomLength / 2 - 15, baseY + 0.6);
+            accentRightGeo.lineTo(roomLength / 2 - 12, baseY);
+            accentRightGeo.lineTo(roomLength / 2 - 9, baseY + 0.6);
+            accentRightGeo.lineTo(roomLength / 2 - 6, baseY);
+            accentRightGeo.lineTo(roomLength / 2 - 3, baseY + 0.6);
+            accentRightGeo.lineTo(roomLength / 2, baseY);
+            
+            // Top edge
+            accentRightGeo.lineTo(roomLength / 2, baseY + zigzagHeight);
+            accentRightGeo.lineTo(-roomLength / 2, baseY + zigzagHeight);
+            accentRightGeo.lineTo(-roomLength / 2, baseY + 0.3);
+
+            const accentRightMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(accentRightGeo, extrudeSettings), accentMaterial);
+            accentRightMesh.position.set(0.11, 0, 0);
+            wallRightGroup.add(accentRightMesh);
+            scene.add(wallRightGroup);
+
+            // Ceiling with recess
+            const recessDepth = 0.4;
+            const recessWidth = roomWidth - 5;
+            const recessLength = roomLength - 8;
+            const recessGeo = new THREE.BoxGeometry(recessWidth, recessDepth, recessLength);
+            const recessMaterial = new THREE.MeshStandardMaterial({ color: 0xe8e8e8 });
+            const recess = new THREE.Mesh(recessGeo, recessMaterial);
+            recess.position.set(0, roomHeight - recessDepth/2, 0);
+            scene.add(recess);
+
+            const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomLength);
+            const ceiling = new THREE.Mesh(ceilingGeometry, wallMaterial);
+            ceiling.position.y = roomHeight;
+            ceiling.rotation.x = Math.PI / 2;
+            scene.add(ceiling);
+
+            // Wall clock on back wall
+            const clockRadius = 0.4;
+            const clockGeo = new THREE.CylinderGeometry(clockRadius, clockRadius, 0.1, 32);
+            const clockMaterial = new THREE.MeshStandardMaterial({ color: 0xe8e8e8 });
+            const clock = new THREE.Mesh(clockGeo, clockMaterial);
+            clock.rotation.x = Math.PI / 2;
+            clock.position.set(-7, roomHeight - 2, -roomLength / 2 + 0.18);
+            scene.add(clock);
+
+            // Clock face
+            const faceGeo = new THREE.CircleGeometry(clockRadius - 0.05, 32);
+            const faceMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            const face = new THREE.Mesh(faceGeo, faceMaterial);
+            face.rotation.x = -Math.PI / 2;
+            face.position.set(-7, roomHeight - 2, -roomLength / 2 + 0.2);
+            scene.add(face);
+
+            // Clock hands
+            const hourHandGeo = new THREE.BoxGeometry(0.05, 0.2, 0.02);
+            const minuteHandGeo = new THREE.BoxGeometry(0.04, 0.28, 0.02);
+            const handMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
+            
+            const hourHand = new THREE.Mesh(hourHandGeo, handMaterial);
+            hourHand.position.set(-7, roomHeight - 2, -roomLength / 2 + 0.21);
+            hourHand.rotation.x = -Math.PI / 2;
+            hourHand.rotation.z = Math.PI / 6; // 2 o'clock position
+            scene.add(hourHand);
+            
+            const minuteHand = new THREE.Mesh(minuteHandGeo, handMaterial);
+            minuteHand.position.set(-7, roomHeight - 2, -roomLength / 2 + 0.22);
+            minuteHand.rotation.x = -Math.PI / 2;
+            minuteHand.rotation.z = Math.PI / 3; // 20 minutes
+            scene.add(minuteHand);
+
+            // Air conditioning units
+            const acGeo = new THREE.BoxGeometry(2.8, 0.7, 0.9);
+            const acMaterial = new THREE.MeshStandardMaterial({ color: 0xf8f8f8 });
+            
+            const ac1 = new THREE.Mesh(acGeo, acMaterial);
+            ac1.position.set(4, roomHeight - 0.45, -roomLength / 2 + 0.55);
+            scene.add(ac1);
+            
+            const ac2 = new THREE.Mesh(acGeo, acMaterial);
+            ac2.position.set(-4, roomHeight - 0.45, -roomLength / 2 + 0.55);
+            scene.add(ac2);
+
+            // SE Logo on wall
+            const logoGroup = new THREE.Group();
+            const logoMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a0a });
+            const barThickness = 0.12;
+            
+            // Create SE logo simplified
+            const topBar = new THREE.Mesh(new THREE.BoxGeometry(barThickness, 0.7, 1.5), logoMaterial);
+            topBar.position.set(-roomWidth/2 + 0.2, roomHeight * 0.7, -roomLength/2 + 10);
+            topBar.rotation.y = Math.PI / 2;
+            topBar.rotation.z = Math.PI / 10;
+            scene.add(topBar);
+
+            const bottomBar = new THREE.Mesh(new THREE.BoxGeometry(barThickness, 0.7, 1.5), logoMaterial);
+            bottomBar.position.set(-roomWidth/2 + 0.2, roomHeight * 0.63, -roomLength/2 + 11.3);
+            bottomBar.rotation.y = Math.PI / 2;
+            bottomBar.rotation.z = -Math.PI / 10;
+            scene.add(bottomBar);
+
+            // Helper Functions
+            function createChair(x, y, z, rotation) {
+                const chair = new THREE.Group();
+                const seatHeight = 1.7; 
+                
+                // Seat
+                const seatGeo = new THREE.BoxGeometry(1.4, 0.15, 1.4);
+                const seat = new THREE.Mesh(seatGeo, chairSeatMaterial);
+                seat.position.y = seatHeight;
+                seat.castShadow = true; 
+                chair.add(seat);
+
+                // Back
+                const backGeo = new THREE.BoxGeometry(1.4, 1.8, 0.15);
+                const back = new THREE.Mesh(backGeo, chairBackMaterial);
+                back.position.y = seatHeight + 0.9;
+                back.position.z = -0.6;
+                back.rotation.x = 0.08;
+                back.castShadow = true; 
+                chair.add(back);
+
+                // Sled base legs
+                const legHeight = 1.6; 
+                const legDepth = 1.5;
+                const legTube = 0.08;
+                const legGeoVert = new THREE.BoxGeometry(legTube, legHeight, legTube);
+                const legGeoHor = new THREE.BoxGeometry(legTube, legTube, legDepth);
+                const chairLegMaterial = new THREE.MeshStandardMaterial({ 
+                    color: 0x555555, 
+                    metalness: 0.7, 
+                    roughness: 0.3 
+                });
+
+                const sledBase = new THREE.Group();
+                const vert1 = new THREE.Mesh(legGeoVert, chairLegMaterial);
+                vert1.position.set(-0.65, legHeight/2, 0);
+                sledBase.add(vert1);
+
+                const vert2 = new THREE.Mesh(legGeoVert, chairLegMaterial);
+                vert2.position.set(0.65, legHeight/2, 0);
+                sledBase.add(vert2);
+                
+                const hor1 = new THREE.Mesh(legGeoHor, chairLegMaterial);
+                hor1.position.set(-0.65, legTube/2, 0);
+                sledBase.add(hor1);
+                
+                const hor2 = new THREE.Mesh(legGeoHor, chairLegMaterial);
+                hor2.position.set(0.65, legTube/2, 0);
+                sledBase.add(hor2);
+                
+                chair.add(sledBase);
+                
+                chair.position.set(x, 0, z); 
+                chair.rotation.y = rotation;
+                scene.add(chair);
+                return chair;
+            }
+
+            function createComputerStation(x, y, z, rotation) {
+                const station = new THREE.Group();
+                const deskHeight = y;
+
+                // Monitor
+                const screenGeo = new THREE.BoxGeometry(1.7, 1.1, 0.08);
+                const screen = new THREE.Mesh(screenGeo, monitorMaterial);
+                screen.position.set(0, deskHeight + 0.75, 0);
+                screen.castShadow = true; 
+                station.add(screen);
+
+                const standGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.65, 8);
+                const stand = new THREE.Mesh(standGeo, monitorMaterial);
+                stand.position.set(0, deskHeight + 0.33, 0);
+                station.add(stand);
+
+                // PC Tower
+                const towerGeo = new THREE.BoxGeometry(0.45, 1.4, 1.6);
+                const tower = new THREE.Mesh(towerGeo, towerMaterial);
+                tower.position.set(0.95, deskHeight - 1.5, 0); 
+                tower.castShadow = true; 
+                station.add(tower);
+
+                // Keyboard
+                const keyGeo = new THREE.BoxGeometry(1.4, 0.04, 0.45);
+                const keyboard = new THREE.Mesh(keyGeo, monitorMaterial);
+                keyboard.position.set(0, deskHeight, 0.7); 
+                keyboard.rotation.x = 0.08;
+                station.add(keyboard);
+
+                station.position.set(x, 0, z);
+                station.rotation.y = rotation;
+                scene.add(station);
+                return station;
+            }
+            
+            function createDesk(width, depth, height) {
+                const desk = new THREE.Group();
+                const topGeo = new THREE.BoxGeometry(width, 0.15, depth);
+                const top = new THREE.Mesh(topGeo, deskMaterial);
+                top.position.y = height - 0.08;
+                top.castShadow = true; 
+                top.receiveShadow = true; 
+                desk.add(top);
+
+                const legGeo = new THREE.BoxGeometry(0.15, height, 0.15);
+                const leg1 = new THREE.Mesh(legGeo, legMaterial);
+                leg1.position.set(-width/2 + 0.08, height/2, -depth/2 + 0.08);
+                desk.add(leg1);
+                
+                const leg2 = new THREE.Mesh(legGeo, legMaterial);
+                leg2.position.set(width/2 - 0.08, height/2, -depth/2 + 0.08);
+                desk.add(leg2);
+                
+                const leg3 = new THREE.Mesh(legGeo, legMaterial);
+                leg3.position.set(-width/2 + 0.08, height/2, depth/2 - 0.08);
+                desk.add(leg3);
+
+                const leg4 = new THREE.Mesh(legGeo, legMaterial);
+                leg4.position.set(width/2 - 0.08, height/2, depth/2 - 0.08);
+                desk.add(leg4);
+
+                return desk;
+            }
+
+            // Layout Furniture
+            const deskHeight = 2.9;
+
+            // Left wall desk
+            const sideDeskLength = roomLength - 8; 
+            const sideDeskDepth = 2.4; 
+            const leftDesk = createDesk(sideDeskDepth, sideDeskLength, deskHeight);
+            leftDesk.position.set(-roomWidth / 2 + sideDeskDepth / 2, 0, 0);
+            scene.add(leftDesk);
+
+            // Computer stations on left desk
+            const numSideStations = 7;
+            const sideSpacing = sideDeskLength / numSideStations;
+            for (let i = 0; i < numSideStations; i++) {
+                const zPos = -sideDeskLength / 2 + sideSpacing / 2 + i * sideSpacing;
+                const xPosDesk = -roomWidth / 2 + sideDeskDepth / 2;
+                
+                createComputerStation(xPosDesk, deskHeight, zPos, Math.PI / 2); 
+                createChair(xPosDesk + sideDeskDepth / 2 + 0.6, 0, zPos, -Math.PI / 2);
+            }
+
+            // Right wall desk
+            const rightDesk = createDesk(sideDeskDepth, sideDeskLength, deskHeight);
+            rightDesk.position.set(roomWidth / 2 - sideDeskDepth / 2, 0, 0);
+            scene.add(rightDesk);
+
+            // Computer stations on right desk
+            for (let i = 0; i < numSideStations; i++) {
+                const zPos = -sideDeskLength / 2 + sideSpacing / 2 + i * sideSpacing;
+                const xPosDesk = roomWidth / 2 - sideDeskDepth / 2;
+                
+                createComputerStation(xPosDesk, deskHeight, zPos, -Math.PI / 2); 
+                createChair(xPosDesk - sideDeskDepth / 2 - 0.6, 0, zPos, Math.PI / 2);
+            }
+
+            // Center table
+            const centerTableLength = 22;
+            const centerTableDepth = 3.8;
+            const centerTable = createDesk(centerTableDepth, centerTableLength, deskHeight);
+            centerTable.position.set(0, 0, 0); 
+            scene.add(centerTable);
+
+            // Chairs around center table
+            const numCenterChairs = 6;
+            const centerSpacing = centerTableLength / numCenterChairs;
+            for (let i = 0; i < numCenterChairs; i++) {
+                const zPos = -centerTableLength / 2 + centerSpacing / 2 + i * centerSpacing;
+                
+                createChair(centerTableDepth / 2 + 1, 0, zPos, -Math.PI / 2); 
+                createChair(-centerTableDepth / 2 - 1, 0, zPos, Math.PI / 2); 
+            }
+
+            // Window resize
+            window.addEventListener('resize', onWindowResize, false);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            stats.update(); 
+            renderer.render(scene, camera);
+        }
+
+        // Start
+        window.onload = function() {
+            try {
+                init();
+                animate();
+            } catch (error) {
+                console.error("Error:", error);
+                document.getElementById('info').innerHTML = 'Error loading scene. Check console.';
+            }
+        };
+    </script>
+</body>
+</html>

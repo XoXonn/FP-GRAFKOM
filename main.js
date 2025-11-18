@@ -133,15 +133,20 @@ function init() {
 
     // --- Lighting ---
     // Ambient light (won't be toggled, so room is never pitch black)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.2); // Dimmer
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Dimmer
     scene.add(ambientLight);
 
     // Main directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(10, 15, 10);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    directionalLight.position.set(5, 20, 10);
     directionalLight.castShadow = true;
+
     directionalLight.shadow.mapSize.width = 2048;
     directionalLight.shadow.mapSize.height = 2048;
+    directionalLight.shadow.camera.left = -25;
+    directionalLight.shadow.camera.right = 25;
+    directionalLight.shadow.camera.top = 25;
+    directionalLight.shadow.camera.bottom = -25;
     // ... (shadow camera settings)
     scene.add(directionalLight);
     toggleableLights.push(directionalLight); // Add to toggle list
@@ -154,17 +159,22 @@ function init() {
     ];
 
     spotLightPositions.forEach(([x, z]) => {
-        const spotLight = new THREE.SpotLight(0xffffff, 0.4); // Brighter spots
+        const spotLight = new THREE.SpotLight(0xffffff, 0.5); // Brighter spots
         spotLight.position.set(x, roomHeight - 0.5, z);
-        spotLight.angle = Math.PI / 6;
-        spotLight.penumbra = 0.3;
-        spotLight.decay = 2;
-        spotLight.distance = 20;
+        spotLight.angle = Math.PI / 3;
+        spotLight.penumbra = 0.5;
+        spotLight.decay = 1.5;
+        spotLight.distance = 25;
+
         scene.add(spotLight);
         toggleableLights.push(spotLight); // Add to toggle list
         
         const lightGeo = new THREE.CylinderGeometry(0.15, 0.15, 0.1, 16);
-        const lightMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
+        const lightMat = new THREE.MeshStandardMaterial({ 
+            color: 0xffffff, 
+            emissive: 0xffffff,
+            emissiveIntensity: 1 
+        });
         const lightMesh = new THREE.Mesh(lightGeo, lightMat);
         lightMesh.position.set(x, roomHeight - 0.15, z);
         scene.add(lightMesh);
@@ -246,11 +256,11 @@ function init() {
     // Path baru ini menggunakan 'centerLineY' (bukan baseY lagi)
     const topBandPath = [
         { z: -roomLength / 2,      y: centerLineY + bandThickness },       // Awal datar
-        { z: -roomLength / 2 + 3,  y: centerLineY + bandThickness },       // Masih datar
-        { z: -roomLength / 2 + 7,  y: centerLineY + bandThickness - 1.2 }, // Mulai turun lebih curam (ditingkatkan dari -0.8 ke -1.2)
-        { z: -roomLength / 2 + 13, y: centerLineY + bandThickness - 1.8 }, // Titik terendah yang lebih curam (ditingkatkan dari -1.2 ke -1.8)
-        { z: roomLength / 2 - 8,   y: centerLineY + bandThickness - 1.6 }, // Mulai naik lagi, tapi dari posisi lebih rendah (ditingkatkan dari -1.0 ke -1.6)
-        { z: roomLength / 2 - 3,   y: centerLineY + bandThickness - 0.7 }, // Naik lebih tinggi (ditingkatkan dari -0.2 ke -0.7)
+        { z: -roomLength / 2 + 10,  y: centerLineY + bandThickness },       // Masih datar
+        //{ z: -roomLength / 2 + 8,  y: centerLineY + bandThickness - 1.2 }, // Mulai turun lebih curam (ditingkatkan dari -0.8 ke -1.2)
+        { z: -roomLength / 2 + 13, y: centerLineY + bandThickness - 1.7 }, // Titik terendah yang lebih curam (ditingkatkan dari -1.2 ke -1.8)
+        //{ z: roomLength / 2 - 10,   y: centerLineY + bandThickness - 1.6 }, // Mulai naik lagi, tapi dari posisi lebih rendah (ditingkatkan dari -1.0 ke -1.6)
+        { z: roomLength / 2 - 5,   y: centerLineY + bandThickness - 1.5 }, // Naik lebih tinggi (ditingkatkan dari -0.2 ke -0.7)
         { z: roomLength / 2,       y: centerLineY + bandThickness - 0.7 }  // Akhir datar (ditingkatkan dari -0.2 ke -0.7)
     ];
 
@@ -396,46 +406,151 @@ function init() {
     
 
     // --- Helper Functions (Same as before) ---
-    function createChair(x, y, z, rotation) {
-        const chair = new THREE.Group();
-        const seatHeight = 1.7; 
-        const seatGeo = new THREE.BoxGeometry(1.4, 0.15, 1.4);
-        const seat = new THREE.Mesh(seatGeo, chairSeatMaterial);
-        seat.position.y = seatHeight;
-        seat.castShadow = true; 
-        chair.add(seat);
-        const backGeo = new THREE.BoxGeometry(1.4, 1.8, 0.15);
-        const back = new THREE.Mesh(backGeo, chairBackMaterial);
-        back.position.y = seatHeight + 0.9;
-        back.position.z = -0.6;
-        back.rotation.x = 0.08;
-        back.castShadow = true; 
-        chair.add(back);
-        const legHeight = 1.6; 
-        const legDepth = 1.5;
-        const legTube = 0.08;
-        const legGeoVert = new THREE.BoxGeometry(legTube, legHeight, legTube);
-        const legGeoHor = new THREE.BoxGeometry(legTube, legTube, legDepth);
-        const chairLegMaterial = new THREE.MeshStandardMaterial({ color: 0x555555, metalness: 0.7, roughness: 0.3 });
-        const sledBase = new THREE.Group();
-        const vert1 = new THREE.Mesh(legGeoVert, chairLegMaterial);
-        vert1.position.set(-0.65, legHeight/2, 0);
-        sledBase.add(vert1);
-        const vert2 = new THREE.Mesh(legGeoVert, chairLegMaterial);
-        vert2.position.set(0.65, legHeight/2, 0);
-        sledBase.add(vert2);
-        const hor1 = new THREE.Mesh(legGeoHor, chairLegMaterial);
-        hor1.position.set(-0.65, legTube/2, 0);
-        sledBase.add(hor1);
-        const hor2 = new THREE.Mesh(legGeoHor, chairLegMaterial);
-        hor2.position.set(0.65, legTube/2, 0);
-        sledBase.add(hor2);
-        chair.add(sledBase);
-        chair.position.set(x, 0, z); 
-        chair.rotation.y = rotation;
-        scene.add(chair);
-        return chair;
-    }
+function createChair(x, y, z, rotation) {
+    const chairGroup = new THREE.Group();
+
+    // --- MATERIAL ---
+    const chromeMat = new THREE.MeshStandardMaterial({ 
+        color: 0xaaaaaa, metalness: 0.9, roughness: 0.2 
+    });
+    const seatMat = new THREE.MeshStandardMaterial({ 
+        color: 0x0f4c81, roughness: 0.6 
+    });
+    const backMat = new THREE.MeshStandardMaterial({ 
+        color: 0x111111, roughness: 0.5 
+    });
+    const armPadMat = new THREE.MeshStandardMaterial({ 
+        color: 0x111111, roughness: 0.5 
+    });
+
+    // --- 1. DUDUKAN & SANDARAN ---
+    const seatGeo = new THREE.BoxGeometry(1.3, 0.15, 1.3);
+    const seat = new THREE.Mesh(seatGeo, seatMat);
+    seat.position.y = 1.4; 
+    seat.castShadow = true;
+    chairGroup.add(seat);
+
+    const backGeo = new THREE.BoxGeometry(1.3, 0.9, 0.15);
+    const back = new THREE.Mesh(backGeo, backMat);
+    back.position.set(0, 2.3, 0.45); 
+    back.rotation.x = -0.15;
+    back.castShadow = true;
+    chairGroup.add(back);
+
+    // --- 2. RANGKA BESI "KOTAK" di Lantai ---
+    const tubeRadius = 0.04;
+    
+    // Kiri & Kanan Bawah
+    const railGeoSide = new THREE.CylinderGeometry(tubeRadius, tubeRadius, 1.6, 12);
+    const railL = new THREE.Mesh(railGeoSide, chromeMat);
+    railL.rotation.x = Math.PI / 2; 
+    railL.position.set(-0.6, tubeRadius, 0.1);
+    chairGroup.add(railL);
+
+    const railR = new THREE.Mesh(railGeoSide, chromeMat);
+    railR.rotation.x = Math.PI / 2;
+    railR.position.set(0.6, tubeRadius, 0.1);
+    chairGroup.add(railR);
+
+    // Depan & Belakang Bawah
+    const railGeoFrontBack = new THREE.CylinderGeometry(tubeRadius, tubeRadius, 1.2, 12);
+    const railFront = new THREE.Mesh(railGeoFrontBack, chromeMat);
+    railFront.rotation.z = Math.PI / 2; 
+    railFront.position.set(0, tubeRadius, -0.7); 
+    chairGroup.add(railFront);
+
+    const railBack = new THREE.Mesh(railGeoFrontBack, chromeMat);
+    railBack.rotation.z = Math.PI / 2; 
+    railBack.position.set(0, tubeRadius, 0.9); 
+    chairGroup.add(railBack);
+
+    // --- 3. TIANG PENYANGGA (KAKI) ---
+    const legGeo = new THREE.CylinderGeometry(tubeRadius, tubeRadius, 1.4, 12);
+    const legFL = new THREE.Mesh(legGeo, chromeMat);
+    legFL.position.set(-0.6, 0.7, -0.7);
+    chairGroup.add(legFL);
+
+    const legFR = new THREE.Mesh(legGeo, chromeMat);
+    legFR.position.set(0.6, 0.7, -0.7);
+    chairGroup.add(legFR);
+
+    const railGeoSeat = new THREE.CylinderGeometry(tubeRadius, tubeRadius, 1.4, 12);
+    const sRailL = new THREE.Mesh(railGeoSeat, chromeMat);
+    sRailL.rotation.x = Math.PI / 2;
+    sRailL.position.set(-0.6, 1.35, 0);
+    chairGroup.add(sRailL);
+
+    const sRailR = new THREE.Mesh(railGeoSeat, chromeMat);
+    sRailR.rotation.x = Math.PI / 2;
+    sRailR.position.set(0.6, 1.35, 0);
+    chairGroup.add(sRailR);
+
+    const backSupGeo = new THREE.CylinderGeometry(tubeRadius, tubeRadius, 1.2, 12);
+    const bSupL = new THREE.Mesh(backSupGeo, chromeMat);
+    bSupL.position.set(-0.6, 2.0, 0.5); 
+    bSupL.rotation.x = -0.15;
+    chairGroup.add(bSupL);
+
+    const bSupR = new THREE.Mesh(backSupGeo, chromeMat);
+    bSupR.position.set(0.6, 2.0, 0.5);
+    bSupR.rotation.x = -0.15;
+    chairGroup.add(bSupR);
+    
+    const backPlateGeo = new THREE.BoxGeometry(1.25, 0.05, 0.02);
+    const backPlate = new THREE.Mesh(backPlateGeo, chromeMat);
+    backPlate.position.set(0, 2.3, 0.52);
+    backPlate.rotation.x = -0.15;
+    chairGroup.add(backPlate);
+
+    // --- 4. ARMREST (Sandaran Tangan) - DIPERBAIKI ---
+    
+    // Jalur Kiri (Dibuat lebih datar dan rendah)
+    const armPathLeft = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(-0.6, 2.0, 0.5),   // A: Tiang Belakang
+        new THREE.Vector3(-0.6, 2.1, 0.2),   // B: Naik SEDIKIT saja (tadinya 2.3)
+        new THREE.Vector3(-0.6, 2.1, -0.3),  // C: Maju Datar (Lebih rendah)
+        new THREE.Vector3(-0.6, 1.4, -0.7)   // D: Turun ke Kaki Depan
+    ]);
+    // Tension dinaikkan ke 0.5 agar sudutnya lebih tegas (tidak terlalu melengkung bulat)
+    armPathLeft.tension = 0.5; 
+
+    const armTubeGeo = new THREE.TubeGeometry(armPathLeft, 20, 0.04, 8, false);
+    // Menggunakan chromeMat agar warna SAMA dengan besi bawah
+    const armLeft = new THREE.Mesh(armTubeGeo, chromeMat); 
+    armLeft.castShadow = true;
+    chairGroup.add(armLeft);
+
+    // Jalur Kanan
+    const armPathRight = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(0.6, 2.0, 0.5),    // A
+        new THREE.Vector3(0.6, 2.1, 0.2),    // B (Tinggi 2.1)
+        new THREE.Vector3(0.6, 2.1, -0.3),   // C
+        new THREE.Vector3(0.6, 1.4, -0.7)    // D
+    ]);
+    armPathRight.tension = 0.5;
+
+    const armRight = new THREE.Mesh(new THREE.TubeGeometry(armPathRight, 20, 0.04, 8, false), chromeMat);
+    armRight.castShadow = true;
+    chairGroup.add(armRight);
+
+    // Bantalan Tangan (Arm Pad) - Posisi disesuaikan turun
+    const padGeo = new THREE.BoxGeometry(0.1, 0.04, 0.6);
+    
+    const padLeft = new THREE.Mesh(padGeo, armPadMat);
+    // Turun ke 2.14 (sebelumnya 2.34) mengikuti tinggi pipa baru
+    padLeft.position.set(-0.6, 2.14, -0.05); 
+    chairGroup.add(padLeft);
+
+    const padRight = new THREE.Mesh(padGeo, armPadMat);
+    padRight.position.set(0.6, 2.14, -0.05); 
+    chairGroup.add(padRight);
+
+    // --- FINAL ---
+    chairGroup.position.set(x, 0, z); 
+    chairGroup.rotation.y = rotation;
+    scene.add(chairGroup);
+    return chairGroup;
+}
 
     function createComputerStation(x, y, z, rotation) {
         const station = new THREE.Group();
@@ -449,21 +564,26 @@ function init() {
         const stand = new THREE.Mesh(standGeo, monitorMaterial);
         stand.position.set(0, deskHeight + 0.33, 0);
         station.add(stand);
-        const towerGeo = new THREE.BoxGeometry(0.45, 1.4, 1.6);
+        const towerGeo = new THREE.BoxGeometry(0.45, 1.4, 1.6); // Tinggi tower = 1.4
         const tower = new THREE.Mesh(towerGeo, towerMaterial);
-        tower.position.set(0.95, deskHeight - 1.5, 0); 
+        tower.position.set(0.95, 0.7, 0); 
+        
         tower.castShadow = true; 
         station.add(tower);
+
+        // Keyboard
         const keyGeo = new THREE.BoxGeometry(1.4, 0.04, 0.45);
         const keyboard = new THREE.Mesh(keyGeo, monitorMaterial);
         keyboard.position.set(0, deskHeight, 0.7); 
         keyboard.rotation.x = 0.08;
         station.add(keyboard);
+
         station.position.set(x, 0, z);
         station.rotation.y = rotation;
         scene.add(station);
         return station;
     }
+
     
     function createDesk(width, depth, height) {
         const desk = new THREE.Group();
@@ -504,7 +624,7 @@ function init() {
         const zPos = -sideDeskLength / 2 + sideSpacing / 2 + i * sideSpacing;
         const xPosDesk = -roomWidth / 2 + sideDeskDepth / 2;
         createComputerStation(xPosDesk, deskHeight, zPos, Math.PI / 2); 
-        createChair(xPosDesk + sideDeskDepth / 2 + 0.6, 0, zPos, -Math.PI / 2);
+        createChair(xPosDesk + sideDeskDepth / 2 + 0.6, 0, zPos, Math.PI / 2);
     }
 
     const rightDesk = createDesk(sideDeskDepth, sideDeskLength, deskHeight);
@@ -515,7 +635,7 @@ function init() {
         const zPos = -sideDeskLength / 2 + sideSpacing / 2 + i * sideSpacing;
         const xPosDesk = roomWidth / 2 - sideDeskDepth / 2;
         createComputerStation(xPosDesk, deskHeight, zPos, -Math.PI / 2); 
-        createChair(xPosDesk - sideDeskDepth / 2 - 0.6, 0, zPos, Math.PI / 2);
+        createChair(xPosDesk - sideDeskDepth / 2 - 0.6, 0, zPos, -Math.PI / 2);
     }
 
     const centerTableLength = 22;
@@ -528,8 +648,8 @@ function init() {
     const centerSpacing = centerTableLength / numCenterChairs;
     for (let i = 0; i < numCenterChairs; i++) {
         const zPos = -centerTableLength / 2 + centerSpacing / 2 + i * centerSpacing;
-        createChair(centerTableDepth / 2 + 1, 0, zPos, -Math.PI / 2); 
-        createChair(-centerTableDepth / 2 - 1, 0, zPos, Math.PI / 2); 
+        createChair(centerTableDepth / 2 + 1, 0, zPos, Math.PI / 2); 
+        createChair(-centerTableDepth / 2 - 1, 0, zPos, -Math.PI / 2); 
     }
 
     // Window resize

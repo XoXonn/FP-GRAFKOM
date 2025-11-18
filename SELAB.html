@@ -208,35 +208,22 @@
             wallLeftBase.receiveShadow = true;
             wallLeftGroup.add(wallLeftBase);
 
-            // Zigzag accent shape - matches photo pattern exactly
+            // Zigzag accent shape - simpler, smoother pattern matching photos
             const accentLeftGeo = new THREE.Shape();
-            const baseY = roomHeight * 0.65 - roomHeight/2;
-            const zigzagHeight = 0.9;
+            const baseY = roomHeight * 0.7 - roomHeight/2;
+            const zigzagHeight = 0.7;
             
-            // Start from left
+            // Create smooth undulating pattern
             accentLeftGeo.moveTo(-roomLength / 2, baseY);
+            accentLeftGeo.lineTo(-roomLength / 2 + 4, baseY);
+            accentLeftGeo.lineTo(-roomLength / 2 + 7, baseY + 0.4);
+            accentLeftGeo.lineTo(-roomLength / 2 + 11, baseY - 0.2);
+            accentLeftGeo.lineTo(-roomLength / 2 + 15, baseY + 0.3);
+            accentLeftGeo.lineTo(roomLength / 2 - 8, baseY + 0.2);
+            accentLeftGeo.lineTo(roomLength / 2 - 4, baseY + 0.5);
+            accentLeftGeo.lineTo(roomLength / 2, baseY + 0.2);
             
-            // Create the exact zigzag pattern from the photos
-            // Horizontal start
-            accentLeftGeo.lineTo(-roomLength / 2 + 3, baseY);
-            // Up diagonal
-            accentLeftGeo.lineTo(-roomLength / 2 + 6, baseY + 0.6);
-            // Down diagonal
-            accentLeftGeo.lineTo(-roomLength / 2 + 9, baseY);
-            // Up diagonal
-            accentLeftGeo.lineTo(-roomLength / 2 + 12, baseY + 0.6);
-            // Down diagonal
-            accentLeftGeo.lineTo(-roomLength / 2 + 15, baseY);
-            // Up diagonal
-            accentLeftGeo.lineTo(-roomLength / 2 + 18, baseY + 0.6);
-            // Long middle section relatively flat
-            accentLeftGeo.lineTo(roomLength / 2 - 10, baseY + 0.2);
-            // Up diagonal
-            accentLeftGeo.lineTo(roomLength / 2 - 7, baseY + 0.7);
-            // Down to end
-            accentLeftGeo.lineTo(roomLength / 2, baseY + 0.3);
-            
-            // Top edge back
+            // Top edge
             accentLeftGeo.lineTo(roomLength / 2, baseY + zigzagHeight);
             accentLeftGeo.lineTo(-roomLength / 2, baseY + zigzagHeight);
             accentLeftGeo.lineTo(-roomLength / 2, baseY);
@@ -260,27 +247,22 @@
             wallRightBase.receiveShadow = true;
             wallRightGroup.add(wallRightBase);
 
-            // Right wall zigzag - mirrored pattern
+            // Right wall zigzag - mirrored smooth pattern
             const accentRightGeo = new THREE.Shape();
             
-            // Start from left (mirrored, so starts high)
-            accentRightGeo.moveTo(-roomLength / 2, baseY + 0.3);
-            
-            // Mirror the left pattern
-            accentRightGeo.lineTo(-roomLength / 2 + 7, baseY + 0.7);
-            accentRightGeo.lineTo(-roomLength / 2 + 10, baseY + 0.2);
-            accentRightGeo.lineTo(roomLength / 2 - 18, baseY + 0.2);
-            accentRightGeo.lineTo(roomLength / 2 - 15, baseY + 0.6);
-            accentRightGeo.lineTo(roomLength / 2 - 12, baseY);
-            accentRightGeo.lineTo(roomLength / 2 - 9, baseY + 0.6);
-            accentRightGeo.lineTo(roomLength / 2 - 6, baseY);
-            accentRightGeo.lineTo(roomLength / 2 - 3, baseY + 0.6);
+            accentRightGeo.moveTo(-roomLength / 2, baseY + 0.2);
+            accentRightGeo.lineTo(-roomLength / 2 + 4, baseY + 0.5);
+            accentRightGeo.lineTo(-roomLength / 2 + 8, baseY + 0.2);
+            accentRightGeo.lineTo(roomLength / 2 - 15, baseY + 0.3);
+            accentRightGeo.lineTo(roomLength / 2 - 11, baseY - 0.2);
+            accentRightGeo.lineTo(roomLength / 2 - 7, baseY + 0.4);
+            accentRightGeo.lineTo(roomLength / 2 - 4, baseY);
             accentRightGeo.lineTo(roomLength / 2, baseY);
             
             // Top edge
             accentRightGeo.lineTo(roomLength / 2, baseY + zigzagHeight);
             accentRightGeo.lineTo(-roomLength / 2, baseY + zigzagHeight);
-            accentRightGeo.lineTo(-roomLength / 2, baseY + 0.3);
+            accentRightGeo.lineTo(-roomLength / 2, baseY + 0.2);
 
             const accentRightMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(accentRightGeo, extrudeSettings), accentMaterial);
             accentRightMesh.position.set(0.11, 0, 0);
@@ -303,38 +285,38 @@
             ceiling.rotation.x = Math.PI / 2;
             scene.add(ceiling);
 
-            // Wall clock on back wall
+            // Wall clock on LEFT wall (near back)
             const clockRadius = 0.4;
             const clockGeo = new THREE.CylinderGeometry(clockRadius, clockRadius, 0.1, 32);
             const clockMaterial = new THREE.MeshStandardMaterial({ color: 0xe8e8e8 });
             const clock = new THREE.Mesh(clockGeo, clockMaterial);
-            clock.rotation.x = Math.PI / 2;
-            clock.position.set(-7, roomHeight - 2, -roomLength / 2 + 0.18);
+            clock.rotation.z = Math.PI / 2;
+            clock.position.set(-roomWidth / 2 + 0.35, roomHeight - 1.8, roomLength / 4);
             scene.add(clock);
 
             // Clock face
             const faceGeo = new THREE.CircleGeometry(clockRadius - 0.05, 32);
             const faceMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
             const face = new THREE.Mesh(faceGeo, faceMaterial);
-            face.rotation.x = -Math.PI / 2;
-            face.position.set(-7, roomHeight - 2, -roomLength / 2 + 0.2);
+            face.rotation.y = Math.PI / 2;
+            face.position.set(-roomWidth / 2 + 0.37, roomHeight - 1.8, roomLength / 4);
             scene.add(face);
 
             // Clock hands
-            const hourHandGeo = new THREE.BoxGeometry(0.05, 0.2, 0.02);
-            const minuteHandGeo = new THREE.BoxGeometry(0.04, 0.28, 0.02);
+            const hourHandGeo = new THREE.BoxGeometry(0.02, 0.2, 0.05);
+            const minuteHandGeo = new THREE.BoxGeometry(0.02, 0.28, 0.04);
             const handMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
             
             const hourHand = new THREE.Mesh(hourHandGeo, handMaterial);
-            hourHand.position.set(-7, roomHeight - 2, -roomLength / 2 + 0.21);
-            hourHand.rotation.x = -Math.PI / 2;
-            hourHand.rotation.z = Math.PI / 6; // 2 o'clock position
+            hourHand.position.set(-roomWidth / 2 + 0.38, roomHeight - 1.8, roomLength / 4);
+            hourHand.rotation.y = Math.PI / 2;
+            hourHand.rotation.x = Math.PI / 6;
             scene.add(hourHand);
             
             const minuteHand = new THREE.Mesh(minuteHandGeo, handMaterial);
-            minuteHand.position.set(-7, roomHeight - 2, -roomLength / 2 + 0.22);
-            minuteHand.rotation.x = -Math.PI / 2;
-            minuteHand.rotation.z = Math.PI / 3; // 20 minutes
+            minuteHand.position.set(-roomWidth / 2 + 0.39, roomHeight - 1.8, roomLength / 4);
+            minuteHand.rotation.y = Math.PI / 2;
+            minuteHand.rotation.x = Math.PI / 3;
             scene.add(minuteHand);
 
             // Air conditioning units
@@ -349,23 +331,40 @@
             ac2.position.set(-4, roomHeight - 0.45, -roomLength / 2 + 0.55);
             scene.add(ac2);
 
-            // SE Logo on wall
+            // SE Logo on RIGHT wall (not left)
             const logoGroup = new THREE.Group();
             const logoMaterial = new THREE.MeshStandardMaterial({ color: 0x0a0a0a });
-            const barThickness = 0.12;
             
-            // Create SE logo simplified
-            const topBar = new THREE.Mesh(new THREE.BoxGeometry(barThickness, 0.7, 1.5), logoMaterial);
-            topBar.position.set(-roomWidth/2 + 0.2, roomHeight * 0.7, -roomLength/2 + 10);
-            topBar.rotation.y = Math.PI / 2;
-            topBar.rotation.z = Math.PI / 10;
-            scene.add(topBar);
-
-            const bottomBar = new THREE.Mesh(new THREE.BoxGeometry(barThickness, 0.7, 1.5), logoMaterial);
-            bottomBar.position.set(-roomWidth/2 + 0.2, roomHeight * 0.63, -roomLength/2 + 11.3);
-            bottomBar.rotation.y = Math.PI / 2;
-            bottomBar.rotation.z = -Math.PI / 10;
-            scene.add(bottomBar);
+            // Create SE logo on RIGHT wall
+            const logoCanvas = document.createElement('canvas');
+            logoCanvas.width = 512;
+            logoCanvas.height = 512;
+            const ctx = logoCanvas.getContext('2d');
+            
+            // Draw SE logo
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 180px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('SE', 256, 200);
+            
+            ctx.font = 'bold 50px Arial';
+            ctx.fillText('SOFTWARE', 256, 320);
+            ctx.fillText('ENGINEERING', 256, 380);
+            
+            const logoTexture = new THREE.CanvasTexture(logoCanvas);
+            const logoMat = new THREE.MeshStandardMaterial({ 
+                map: logoTexture,
+                transparent: true
+            });
+            
+            const logoPlane = new THREE.Mesh(
+                new THREE.PlaneGeometry(4, 4),
+                logoMat
+            );
+            logoPlane.rotation.y = -Math.PI / 2; // Face left from right wall
+            logoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.75, -roomLength / 2 + 6);
+            scene.add(logoPlane);
 
             // Helper Functions
             function createChair(x, y, z, rotation) {

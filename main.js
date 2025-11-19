@@ -133,11 +133,11 @@ function init() {
 
     // --- Lighting ---
     // Very dim ambient light (room is dark when lights are off)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.05);
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.06);
     scene.add(ambientLight);
 
     // Main directional light (simulating natural daylight from front door - NOT toggleable)
-    const directionalLight = new THREE.DirectionalLight(0xfff5e6, 0.3);
+    const directionalLight = new THREE.DirectionalLight(0xfff5e6, 0.2);
     directionalLight.position.set(-8, 12, 18); // From front-left where door is
     directionalLight.castShadow = true;
 
@@ -148,6 +148,10 @@ function init() {
     directionalLight.shadow.camera.top = 25;
     directionalLight.shadow.camera.bottom = -25;
     scene.add(directionalLight);
+
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb29a7a, 0.4);
+    hemiLight.position.set(0, roomHeight, 0);
+    scene.add(hemiLight);
 
     // --- Materials ---
     const floorMaterial = new THREE.MeshStandardMaterial({ 
@@ -524,7 +528,7 @@ function init() {
 
     borderLightPositions.forEach(([x, z]) => {
         // Point light for each bulb (like real light bulb)
-        const pointLight = new THREE.PointLight(0xfff8f0, 1.2, 18, 2);
+        const pointLight = new THREE.PointLight(0xfff8f0, 0.9, 16, 2);
         pointLight.position.set(x, roomHeight - ceilingBorderDepth - 0.5, z);
         pointLight.castShadow = true;
         pointLight.shadow.mapSize.width = 512;
@@ -549,7 +553,7 @@ function init() {
         const bulbMat = new THREE.MeshStandardMaterial({ 
             color: 0xffffff,
             emissive: 0xfff8f0,
-            emissiveIntensity: 0.8,
+            emissiveIntensity: 0.6,
             roughness: 0.2,
             metalness: 0.0
         });
@@ -571,7 +575,7 @@ function init() {
 
     centerLightPositions.forEach(([x, z]) => {
         // Point light for each bulb (like real light bulb)
-        const pointLight = new THREE.PointLight(0xfff8f0, 1.2, 18, 2);
+        const pointLight = new THREE.PointLight(0xfff8f0, 0.9, 16, 2);
         pointLight.position.set(x, roomHeight - 0.5, z);
         pointLight.castShadow = true;
         pointLight.shadow.mapSize.width = 512;
@@ -596,7 +600,7 @@ function init() {
         const bulbMat = new THREE.MeshStandardMaterial({ 
             color: 0xffffff,
             emissive: 0xfff8f0,
-            emissiveIntensity: 0.8,
+            emissiveIntensity: 0.6,
             roughness: 0.2,
             metalness: 0.0
         });
@@ -613,7 +617,9 @@ function init() {
     const ceilingMaterial = new THREE.MeshStandardMaterial({ 
         color: 0xffffff,
         roughness: 0.8,
-        metalness: 0.0
+        metalness: 0.0,
+        emissive: 0x222222,
+        emissiveIntensity: 0.28
     });
     const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
     ceiling.position.y = roomHeight;
@@ -665,7 +671,9 @@ function init() {
     const innerCeilingMaterial = new THREE.MeshStandardMaterial({ 
         color: 0xf5f5f5, 
         roughness: 0.8,
-        metalness: 0.0
+        metalness: 0.0,
+        emissive: 0x1a1a1a,
+        emissiveIntensity: 0.18
     });
     const innerCeiling = new THREE.Mesh(
         new THREE.PlaneGeometry(innerCeilingWidth, innerCeilingLength),

@@ -744,24 +744,37 @@ function init() {
     scene.add(acGroup);
     
     // SE Logo
-    const logoCanvas = document.createElement('canvas');
-    logoCanvas.width = 512; logoCanvas.height = 512;
-    const ctx = logoCanvas.getContext('2d');
-    ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, 512, 512);
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(100, 80, 140, 40); ctx.fillRect(100, 80, 40, 100);
-    ctx.fillRect(100, 140, 120, 40); ctx.fillRect(200, 140, 40, 100);
-    ctx.fillRect(100, 200, 140, 40); ctx.fillRect(280, 80, 40, 160);
-    ctx.fillRect(280, 80, 120, 40); ctx.fillRect(280, 140, 100, 40);
-    ctx.fillRect(280, 200, 120, 40);
-    ctx.font = 'bold 48px Arial'; ctx.textAlign = 'center';
-    ctx.fillText('SOFTWARE', 256, 300); ctx.fillText('ENGINEERING', 256, 360);
-    const logoTexture = new THREE.CanvasTexture(logoCanvas);
-    const logoMat = new THREE.MeshStandardMaterial({ map: logoTexture, color: 0xffffff, transparent: false });
-    const logoPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.0), logoMat);
-    logoPlane.rotation.y = -Math.PI / 2;
-    logoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.63, 0);
-    scene.add(logoPlane);
+    // const logoCanvas = document.createElement('canvas');
+    // logoCanvas.width = 512; logoCanvas.height = 512;
+    // const ctx = logoCanvas.getContext('2d');
+    // ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, 512, 512);
+    // ctx.fillStyle = '#000000';
+    // ctx.fillRect(100, 80, 140, 40); ctx.fillRect(100, 80, 40, 100);
+    // ctx.fillRect(100, 140, 120, 40); ctx.fillRect(200, 140, 40, 100);
+    // ctx.fillRect(100, 200, 140, 40); ctx.fillRect(280, 80, 40, 160);
+    // ctx.fillRect(280, 80, 120, 40); ctx.fillRect(280, 140, 100, 40);
+    // ctx.fillRect(280, 200, 120, 40);
+    // ctx.font = 'bold 48px Arial'; ctx.textAlign = 'center';
+    // ctx.fillText('SOFTWARE', 256, 300); ctx.fillText('ENGINEERING', 256, 360);
+    // const logoTexture = new THREE.CanvasTexture(logoCanvas);
+    // const logoMat = new THREE.MeshStandardMaterial({ map: logoTexture, color: 0xffffff, transparent: false });
+    // const logoPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.0), logoMat);
+    // logoPlane.rotation.y = -Math.PI / 2;
+    // logoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.63, 0);
+    // scene.add(logoPlane);
+    
+    // SE Logo (Image Texture)
+    const seLogoTexture = new THREE.TextureLoader().load('img/logo.png');
+    const seLogoMaterial = new THREE.MeshStandardMaterial({
+        map: seLogoTexture,
+        transparent: true,
+        roughness: 0.6,
+        metalness: 0.1
+    });
+    const seLogoPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.7), seLogoMaterial);
+    seLogoPlane.rotation.y = -Math.PI / 2;
+    seLogoPlane.position.set(roomWidth / 2 - 0.32 , roomHeight * 0.75, 0);
+    scene.add(seLogoPlane);
     
     // --- END: Pasted geometry code ---
     

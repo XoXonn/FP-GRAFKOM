@@ -278,56 +278,57 @@ function init() {
     scene.add(floor);
 
 
-    // --- BACK WALL & WINDOWS (With Brown Deco) ---
+    // --- BACK WALL & WINDOWS (Fixed: Brown Backing Behind AC) ---
     const backWallGroup = new THREE.Group();
-    const windowHeight = 7.0; // Fixed height (6.5 was too big for room!)
-    const windowY = 2.0;      // Sill height
-    const windowWidth = roomWidth - 0.4; // Huge window
+    const windowHeight = 6.8; // FIXED: 7.0 was too big (Room is only 4.5!)
+    const windowY = 2.0;      
+    const windowWidth = roomWidth - 0.3; 
     
-    // 1. Bottom Wall
+    // 1. Bottom Wall (White)
     const wallBottom = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, windowY, 0.2), wallMaterial);
     wallBottom.position.set(0, windowY/2, 0);
     backWallGroup.add(wallBottom);
 
-    // 2. Top Wall (Where the AC sits)
+    // 2. Top Wall (Backing behind AC) -> CHANGED TO BROWN (accentMaterial)
     const wallTopH = roomHeight - (windowY + windowHeight);
-    const wallTop = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, wallTopH, 0.2), wallMaterial);
-    wallTop.position.set(0, windowY + windowHeight + wallTopH/2, 0);
+    // Use Math.max to prevent negative height if numbers are tweaked
+    const safeTopH = Math.max(0.1, wallTopH); 
+    
+    const wallTop = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, safeTopH, 0.2), accentMaterial); // <--- CHANGED MATERIAL
+    wallTop.position.set(0, windowY + windowHeight + safeTopH/2, 0);
     backWallGroup.add(wallTop);
 
-    // --- BROWN DECO STRIP (Behind AC) ---
-    // A stripe running across the top wall
-    const topDeco = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, 2.5, 0.8), accentMaterial);
-    // Position it high up (y = 4.0 approx) to sit behind the AC
-    topDeco.position.set(0, windowY + windowHeight + 0.4, 0); 
-    backWallGroup.add(topDeco);
-    // ------------------------------------
+    // --- BROWN CORNER PILLARS ---
+    const pillarWidth = 1.6; 
+    const pillarGeo = new THREE.BoxGeometry(pillarWidth, roomHeight, 0.4); // Depth 0.4 to pop out
+    
+    // Left Pillar
+    const pillarL = new THREE.Mesh(pillarGeo, accentMaterial);
+    pillarL.position.set(-roomWidth/2 + pillarWidth/2, roomHeight/2, 0.4); 
+    backWallGroup.add(pillarL);
 
-    // 3. Side Fillers
+    // Right Pillar
+    const pillarR = new THREE.Mesh(pillarGeo, accentMaterial);
+    pillarR.position.set(roomWidth/2 - pillarWidth/2, roomHeight/2, 0.4);
+    backWallGroup.add(pillarR);
+
+    // --- BROWN TOP BEAM (Connecting Pillars) ---
+    // Added this to ensure the brown section looks solid behind the AC
+    const topDeco = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, 0.8, 0.25), accentMaterial);
+    topDeco.position.set(0, 4.1, 0); 
+    backWallGroup.add(topDeco);
+
+    // 3. Side Fillers (White parts left/right of window)
     const sideFillerWidth = (roomWidth - windowWidth) / 2; 
     const sideGeo = new THREE.BoxGeometry(sideFillerWidth + 0.05, windowHeight, 0.2);
     
-    // Left Bump
     const sideL = new THREE.Mesh(sideGeo, wallMaterial);
     sideL.position.set(-roomWidth/2 + sideFillerWidth/2, windowY + windowHeight/2, 0);
     backWallGroup.add(sideL);
 
-    // Right Bump
     const sideR = new THREE.Mesh(sideGeo, wallMaterial);
     sideR.position.set(roomWidth/2 - sideFillerWidth/2, windowY + windowHeight/2, 0);
     backWallGroup.add(sideR);
-
-    // --- BROWN DECO ON SIDES ---
-    const sideDecoGeo = new THREE.BoxGeometry(sideFillerWidth + 0.06, 0.15, 0.22);
-    
-    // Left Stripes
-    const dL1 = new THREE.Mesh(sideDecoGeo, accentMaterial); dL1.position.set(-roomWidth/2 + sideFillerWidth/2, 3.0, 0); backWallGroup.add(dL1);
-    const dL2 = new THREE.Mesh(sideDecoGeo, accentMaterial); dL2.position.set(-roomWidth/2 + sideFillerWidth/2, 2.5, 0); backWallGroup.add(dL2);
-
-    // Right Stripes
-    const dR1 = new THREE.Mesh(sideDecoGeo, accentMaterial); dR1.position.set(roomWidth/2 - sideFillerWidth/2, 3.0, 0); backWallGroup.add(dR1);
-    const dR2 = new THREE.Mesh(sideDecoGeo, accentMaterial); dR2.position.set(roomWidth/2 - sideFillerWidth/2, 2.5, 0); backWallGroup.add(dR2);
-    // ---------------------------
 
     backWallGroup.position.z = -roomLength/2 - 0.1;
     scene.add(backWallGroup);
@@ -337,7 +338,7 @@ function init() {
     glassWindow.position.set(0, windowY + windowHeight/2, -roomLength/2);
     glassWindow.material.side = THREE.DoubleSide; 
     scene.add(glassWindow);
-
+    
     // Window frame
     const windowFrameMaterial = new THREE.MeshStandardMaterial({
         color: 0xcccccc,

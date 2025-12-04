@@ -1,6 +1,7 @@
 let scene, camera, renderer, controls, stats;
 let infoElement;
 let rgbMaterial;
+let shadowCastingLights = [];
 
 // Variables for movement physics
 let moveForward = false;
@@ -145,6 +146,7 @@ function init() {
     directionalLight.shadow.camera.top = 25;
     directionalLight.shadow.camera.bottom = -25;
     scene.add(directionalLight);
+    shadowCastingLights.push(directionalLight);
 
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb29a7a, 0.4);
     hemiLight.position.set(0, roomHeight, 0);
@@ -258,6 +260,33 @@ function init() {
         transparent: true,
         thickness: 0.5
     });
+    const frostedGlassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        metalness: 0,
+        roughness: 0.9,
+        transmission: 0.35,
+        transparent: true,
+        opacity: 0.85,
+        thickness: 0.4
+    });
+    const doorFrameMaterial = new THREE.MeshStandardMaterial({
+        color: 0x3b2b20, // dark brown cladding
+        roughness: 0.45,
+        metalness: 0.25
+    });
+    const stainlessMaterial = new THREE.MeshStandardMaterial({
+        color: 0xb5b5b5,
+        roughness: 0.2,
+        metalness: 0.85
+    });
+    const doorLogoMaterial = new THREE.MeshStandardMaterial({
+        color: 0x6c5141,
+        roughness: 0.6,
+        metalness: 0.05,
+        transparent: true,
+        opacity: 0.95
+    });
+    const exitSignMaterial = new THREE.MeshBasicMaterial({ color: 0x0f5d2b });
     // const cabinetMaterial = new THREE.MeshStandardMaterial({
     //     color: 0xf0f0f0, roughness: 0.5, metalness: 0.1
     // });
@@ -452,34 +481,54 @@ function init() {
         scene.add(frontWallLeft);
     }
 
-    // Double glass doors with frame
+    // Double glass doors with frame + hardware (front entrance)
+    const frameThickness = 0.18;
+    const frameDepth = 0.35;
+    const leafWidth = doorWidth / 2 - frameThickness * 1.4;
+    const leafHeight = doorHeight - frameThickness * 1.4;
 
-
-    const doorFrameMaterial = new THREE.MeshStandardMaterial({
-        color: 0xdddddd,
-        roughness: 0.5,
-        metalness: 0.3
-    });
-
-    // Door frame
-    const frameThickness = 0.15;
-    const frameDepth = 0.2;
-
-    // Left door glass
+    // Glass leaves
     const leftDoorGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(doorWidth / 2 - frameThickness * 1.5, doorHeight - frameThickness * 2, 0.05),
+        new THREE.BoxGeometry(leafWidth, leafHeight, 0.05),
         glassMaterial
     );
     leftDoorGlass.position.set(doorX - doorWidth / 4, doorHeight / 2, roomLength / 2 - 0.1);
     scene.add(leftDoorGlass);
 
-    // Right door glass
     const rightDoorGlass = new THREE.Mesh(
-        new THREE.BoxGeometry(doorWidth / 2 - frameThickness * 1.5, doorHeight - frameThickness * 2, 0.05),
+        new THREE.BoxGeometry(leafWidth, leafHeight, 0.05),
         glassMaterial
     );
     rightDoorGlass.position.set(doorX + doorWidth / 4, doorHeight / 2, roomLength / 2 - 0.1);
     scene.add(rightDoorGlass);
+
+    // Frosted film + simple stripe motif
+    const frostHeight = leafHeight * 0.6;
+    const frostWidth = leafWidth * 0.96;
+    const frostOffsetZ = 0.03;
+
+    function addFrostPanel(xPos) {
+        const frost = new THREE.Mesh(new THREE.PlaneGeometry(frostWidth, frostHeight), frostedGlassMaterial);
+        frost.position.set(xPos, doorHeight / 2, roomLength / 2 - 0.1 + frostOffsetZ);
+        frost.rotation.y = Math.PI; // face interior
+        scene.add(frost);
+
+        // Two stripes to hint the logo layout
+        const stripeLength = frostWidth * 0.9;
+        const stripeHeight = frostHeight * 0.16;
+        const stripeOffsetZ = 0.001;
+
+        const stripeTop = new THREE.Mesh(new THREE.PlaneGeometry(stripeLength, stripeHeight), doorLogoMaterial);
+        stripeTop.position.set(xPos, doorHeight / 2 + stripeHeight * 1.6, roomLength / 2 - 0.1 + frostOffsetZ + stripeOffsetZ);
+        stripeTop.rotation.y = Math.PI;
+        scene.add(stripeTop);
+
+        const stripeBottom = stripeTop.clone();
+        stripeBottom.position.y = doorHeight / 2 - stripeHeight * 1.6;
+        scene.add(stripeBottom);
+    }
+    addFrostPanel(doorX - doorWidth / 4);
+    addFrostPanel(doorX + doorWidth / 4);
 
     // Door frame - vertical sides
     const leftFrame = new THREE.Mesh(
@@ -511,6 +560,106 @@ function init() {
     );
     centerDivider.position.set(doorX, doorHeight / 2, roomLength / 2);
     scene.add(centerDivider);
+
+    // Transom glass (clear) above doors
+    const transomHeight = 1.0;
+    const transom = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth, transomHeight, 0.08),
+        glassMaterial
+    );
+    transom.position.set(doorX, doorHeight + transomHeight / 2, roomLength / 2 - 0.11);
+    scene.add(transom);
+
+    // Side frosted panels
+    const sidePanelWidth = 1.2;
+    const sidePanelHeight = doorHeight + transomHeight - 0.2;
+    const sidePanelZ = roomLength / 2 - 0.11;
+
+    const leftSidePanel = new THREE.Mesh(
+        new THREE.BoxGeometry(sidePanelWidth, sidePanelHeight, 0.05),
+        frostedGlassMaterial
+    );
+    leftSidePanel.position.set(doorX - doorWidth / 2 - sidePanelWidth / 2 - 0.1, sidePanelHeight / 2, sidePanelZ);
+    scene.add(leftSidePanel);
+
+    const rightSidePanel = new THREE.Mesh(
+        new THREE.BoxGeometry(sidePanelWidth, sidePanelHeight, 0.05),
+        frostedGlassMaterial
+    );
+    rightSidePanel.position.set(doorX + doorWidth / 2 + sidePanelWidth / 2 + 0.1, sidePanelHeight / 2, sidePanelZ);
+    scene.add(rightSidePanel);
+
+    // Handles (stainless) + push plates
+    const handleHeight = 2.2;
+    const handleDepth = 0.12;
+    const handleWidth = 0.14;
+    const handleOffsetX = leafWidth * 0.22;
+    const handleY = doorHeight / 2;
+    const handleZ = roomLength / 2 - 0.06;
+
+    const leftHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(handleWidth, handleHeight, handleDepth),
+        stainlessMaterial
+    );
+    leftHandle.position.set(doorX - doorWidth / 4 + handleOffsetX, handleY, handleZ);
+    scene.add(leftHandle);
+
+    const rightHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(handleWidth, handleHeight, handleDepth),
+        stainlessMaterial
+    );
+    rightHandle.position.set(doorX + doorWidth / 4 - handleOffsetX, handleY, handleZ);
+    scene.add(rightHandle);
+
+    const pushPlateWidth = 0.28;
+    const pushPlateHeight = 0.9;
+    const pushPlateZ = handleZ + 0.03;
+
+    const leftPush = new THREE.Mesh(new THREE.PlaneGeometry(pushPlateWidth, pushPlateHeight), stainlessMaterial);
+    leftPush.position.set(leftHandle.position.x, handleY, pushPlateZ);
+    leftPush.rotation.y = Math.PI;
+    scene.add(leftPush);
+
+    const rightPush = leftPush.clone();
+    rightPush.position.x = rightHandle.position.x;
+    scene.add(rightPush);
+
+    // Floor patch hinges (bottom pivot/closer) + top patches
+    const patchWidth = 0.35;
+    const patchDepth = 0.22;
+    const patchHeight = 0.06;
+    const patchZ = roomLength / 2 - patchDepth / 2;
+
+    const leftBottomPatch = new THREE.Mesh(
+        new THREE.BoxGeometry(patchWidth, patchHeight, patchDepth),
+        stainlessMaterial
+    );
+    leftBottomPatch.position.set(doorX - doorWidth / 4, patchHeight / 2, patchZ);
+    scene.add(leftBottomPatch);
+
+    const rightBottomPatch = leftBottomPatch.clone();
+    rightBottomPatch.position.x = doorX + doorWidth / 4;
+    scene.add(rightBottomPatch);
+
+    const topPatchHeight = 0.07;
+    const topPatchZ = roomLength / 2 - 0.09;
+
+    const leftTopPatch = new THREE.Mesh(
+        new THREE.BoxGeometry(patchWidth, topPatchHeight, patchDepth * 0.7),
+        stainlessMaterial
+    );
+    leftTopPatch.position.set(doorX - doorWidth / 4, doorHeight - topPatchHeight / 2, topPatchZ);
+    scene.add(leftTopPatch);
+
+    const rightTopPatch = leftTopPatch.clone();
+    rightTopPatch.position.x = doorX + doorWidth / 4;
+    scene.add(rightTopPatch);
+
+    // EXIT signage
+    const exitSign = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.36), exitSignMaterial);
+    exitSign.position.set(doorX, doorHeight + transomHeight - 0.25, roomLength / 2 - 0.01);
+    exitSign.rotation.y = Math.PI;
+    scene.add(exitSign);
 
     // ... (All other room geometry: TV, panels, walls, ceiling, clock, AC, logo) ...
 
@@ -1635,6 +1784,17 @@ function toggleLights() {
             item.visible = lightsOn;
         }
     });
+
+    // Turn off all shadows when the lights are off
+    shadowCastingLights.forEach(light => {
+        light.castShadow = lightsOn;
+        if (light.shadow) {
+            light.shadow.autoUpdate = lightsOn;
+            light.shadow.needsUpdate = true;
+        }
+    });
+    renderer.shadowMap.enabled = lightsOn;
+    renderer.shadowMap.autoUpdate = lightsOn;
 }
 
 function onWindowResize() {

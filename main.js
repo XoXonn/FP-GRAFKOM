@@ -1067,6 +1067,7 @@ function init() {
 
     function createDesk(width, depth, height, options = {}) {
         const powerChannel = options.powerChannel === true;
+        const powerStripCount = options.powerStripCount || 2; // default 2 strips unless specified
         const desk = new THREE.Group();
         desk.userData.collidable = true; // <--- TAGGED AS OBSTACLE
 
@@ -1094,7 +1095,8 @@ function init() {
 
             // Metal channel running along table depth, slightly recessed
             const channelWidth = gapWidth * 0.9;
-            const channelLength = depth * 0.95;
+            const edgeClearance = 0.01; // minimal clearance so channel/caps nearly reach table edge
+            const channelLength = depth - edgeClearance * 2;
             const channelThickness = 0.02;
             const channelRecess = 0.012; // sink below surface a bit
             const channel = new THREE.Mesh(
@@ -1152,10 +1154,20 @@ function init() {
                 strip.add(led);
             }
 
-            // Two strips per table, spaced along the channel
-            const stripOffset = depth * 0.25; // place roughly at 1/4 and -1/4 depth
-            addStrip(stripOffset);
-            addStrip(-stripOffset);
+            // Place strips along the channel (default 2, customizable)
+            if (powerStripCount <= 2) {
+                const stripOffset = depth * 0.25; // place roughly at 1/4 and -1/4 depth
+                addStrip(stripOffset);
+                if (powerStripCount > 1) {
+                    addStrip(-stripOffset);
+                }
+            } else {
+                const spacing = channelLength / (powerStripCount + 1);
+                for (let i = 0; i < powerStripCount; i++) {
+                    const z = -channelLength / 2 + spacing * (i + 1);
+                    addStrip(z);
+                }
+            }
         } else {
             // Plain single-piece top for regular desks
             const topGeo = new THREE.BoxGeometry(width, topThickness, depth);
@@ -1273,7 +1285,7 @@ function init() {
     const combinedDepth = centerSpacingZ * centerRows;
     const combinedZCenter = centerStartZ + ((centerRows - 1) * centerSpacingZ) / 2;
 
-    const centerDesk = createDesk(combinedWidth, combinedDepth, deskHeight, { powerChannel: true });
+    const centerDesk = createDesk(combinedWidth, combinedDepth, deskHeight, { powerChannel: true, powerStripCount: 8 });
     centerDesk.position.set(0, 0, combinedZCenter);
     scene.add(centerDesk);
 

@@ -421,15 +421,15 @@ function init() {
     const doorX = -roomWidth / 2 + doorWidth / 2 + 3.5;
 
     // Wall sections around door
-    // Right section of front wall
-    const frontWallRightWidth = roomWidth / 2 - doorWidth / 2 - 2;
-    const frontWallRight = new THREE.Mesh(
-        new THREE.BoxGeometry(frontWallRightWidth, roomHeight, 0.3),
-        wallMaterial
-    );
-    frontWallRight.position.set(roomWidth / 2 - frontWallRightWidth / 2, roomHeight / 2, roomLength / 2);
-    frontWallRight.receiveShadow = true;
-    scene.add(frontWallRight);
+    // Right section of front wall (COMMENTED OUT - overlaps with cabinet)
+    // const frontWallRightWidth = roomWidth / 2 - doorWidth / 2 - 2;
+    // const frontWallRight = new THREE.Mesh(
+    //     new THREE.BoxGeometry(frontWallRightWidth, roomHeight, 0.3),
+    //     wallMaterial
+    // );
+    // frontWallRight.position.set(roomWidth / 2 - frontWallRightWidth / 2, roomHeight / 2, roomLength / 2);
+    // frontWallRight.receiveShadow = true;
+    // scene.add(frontWallRight);
 
     // Top section above door
     const frontWallTop = new THREE.Mesh(
@@ -1312,18 +1312,18 @@ function init() {
         const separatorWidth = 0.4;
         // const cornerBlockWidth = 0.8;
 
-        const availableWidth = totalTargetWidth - (2 * separatorWidth);
+        const availableWidth = totalTargetWidth - (4 * separatorWidth);
         const baseWidth = availableWidth / 4;
 
         const leftWidth = baseWidth;
         const middleWidth = baseWidth * 2;
         const rightWidth = baseWidth;
 
-        const depth = 0.8;
+        const depth = 2;
 
         const bottomCabinetHeight = 3.5;
-        const bookshelfHeight = 4.0;
-        const topCabinetHeight = 2.625;
+        const bookshelfHeight = 3.5;
+        const topCabinetHeight = 1.5;
         const horizontalSeparatorHeight = 0.05;
 
         const leftDoors = 2;
@@ -1377,8 +1377,9 @@ function init() {
             const shelfGroup = new THREE.Group();
             const wallThickness = 0.05;
 
-            const actualDepth = isHollow ? depth + 0.5 : depth;
-            const zOffset = isHollow ? -0.25 : 0;
+            // Equalize depth: hollow parts now have same depth as cabinets
+            const actualDepth = depth;
+            const zOffset = 0;
 
             if (!isHollow) {
                 const back = new THREE.Mesh(new THREE.BoxGeometry(width, height, wallThickness), woodMaterial);
@@ -1512,6 +1513,12 @@ function init() {
         // group.add(cornerBlock);
         // currentX += cornerBlockWidth;
 
+        // Left Separator (New)
+        const separatorLeft = new THREE.Mesh(new THREE.BoxGeometry(separatorWidth, totalHeight, depth), separatorMaterial);
+        separatorLeft.position.set(currentX + separatorWidth / 2, totalHeight / 2, 0);
+        group.add(separatorLeft);
+        currentX += separatorWidth;
+
         const leftSection = createVerticalSection(leftWidth, leftDoors, leftDoors, true, { horizontalShelves: 1, verticalDividers: 0 });
         leftSection.position.x = currentX + leftWidth / 2;
         group.add(leftSection);
@@ -1539,9 +1546,15 @@ function init() {
         const rightSection = createVerticalSection(rightWidth, rightDoors, rightDoors, true, { horizontalShelves: 1, verticalDividers: 0 });
         rightSection.position.x = currentX + rightWidth / 2;
         group.add(rightSection);
+        currentX += rightWidth;
+
+        // Right Separator (New)
+        const separatorRight = new THREE.Mesh(new THREE.BoxGeometry(separatorWidth, totalHeight, depth), separatorMaterial);
+        separatorRight.position.set(currentX + separatorWidth / 2, totalHeight / 2, 0);
+        group.add(separatorRight);
 
         group.rotation.y = Math.PI;
-        group.position.set(4.5, 0, 16);
+        group.position.set(4.5, 0, 17.1);
         group.userData.collidable = true;
 
         scene.add(group);

@@ -1473,6 +1473,7 @@ function init() {
         const bottomCabinetHeight = 3.5;
         const bookshelfHeight = 3.5;
         const topCabinetHeight = 1.5;
+        const blankTopHeight = 1.5;
         const horizontalSeparatorHeight = 0.05;
 
         const leftDoors = 2;
@@ -1647,10 +1648,16 @@ function init() {
             topCabinet.position.y = bottomCabinetHeight + horizontalSeparatorHeight * 2 + bookshelfHeight + topCabinetHeight / 2;
             sectionGroup.add(topCabinet);
 
+            // Blank Top Cabinet (for AC)
+            const blankTop = new THREE.Mesh(new THREE.BoxGeometry(width, blankTopHeight, depth), woodMaterial);
+            blankTop.position.y = bottomCabinetHeight + horizontalSeparatorHeight * 2 + bookshelfHeight + topCabinetHeight + blankTopHeight / 2;
+            blankTop.castShadow = true;
+            sectionGroup.add(blankTop);
+
             return sectionGroup;
         }
 
-        const totalHeight = bottomCabinetHeight + bookshelfHeight + topCabinetHeight + 2 * horizontalSeparatorHeight;
+        const totalHeight = bottomCabinetHeight + bookshelfHeight + topCabinetHeight + blankTopHeight + 2 * horizontalSeparatorHeight;
         let currentX = -totalTargetWidth / 2;
 
         // const cornerBlock = new THREE.Mesh(
@@ -1701,6 +1708,22 @@ function init() {
         const separatorRight = new THREE.Mesh(new THREE.BoxGeometry(separatorWidth, totalHeight, depth), separatorMaterial);
         separatorRight.position.set(currentX + separatorWidth / 2, totalHeight / 2, 0);
         group.add(separatorRight);
+
+        // --- Air Conditioner (GLTF Model) ---
+        const gltfLoader = new THREE.GLTFLoader();
+        gltfLoader.load('models/air_condition_daikin.glb', function (gltf) {
+            const ac = gltf.scene;
+            ac.scale.set(1.5, 1.5, 1.5);
+
+            // Position relative to group
+            // X: 0 (Centered)
+            // Y: totalHeight - blankTopHeight / 2 (Centered on blank top)
+            // Z: depth / 2 (Front face of cabinet) + small offset
+            ac.position.set(0, totalHeight - blankTopHeight / 2, depth / 2 + 0.2);
+
+            ac.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+            group.add(ac);
+        }, undefined, function (e) { console.error(e); });
 
         group.rotation.y = Math.PI;
         group.position.set(4.5, 0, 17.1);

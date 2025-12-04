@@ -228,6 +228,27 @@ function init() {
         color: 0xffffff,
         metalness: 0.0
     });
+    const powerStripMaterial = new THREE.MeshStandardMaterial({
+        color: 0xf5f5f5,
+        roughness: 0.5,
+        metalness: 0.05
+    });
+    const powerHoleMaterial = new THREE.MeshStandardMaterial({
+        color: 0x222222,
+        roughness: 0.6
+    });
+    const powerChannelMaterial = new THREE.MeshStandardMaterial({
+        color: 0xb3b3b3,
+        roughness: 0.35,
+        metalness: 0.25
+    });
+    const powerLedMaterial = new THREE.MeshStandardMaterial({
+        color: 0x3fb1ff,
+        emissive: 0x3fb1ff,
+        emissiveIntensity: 0.7,
+        roughness: 0.4,
+        metalness: 0.0
+    });
 
     const glassMaterial = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
@@ -1044,16 +1065,106 @@ function init() {
     }
 
 
-    function createDesk(width, depth, height) {
+    function createDesk(width, depth, height, options = {}) {
+        const powerChannel = options.powerChannel === true;
         const desk = new THREE.Group();
         desk.userData.collidable = true; // <--- TAGGED AS OBSTACLE
 
-        const topGeo = new THREE.BoxGeometry(width, 0.15, depth);
-        const top = new THREE.Mesh(topGeo, deskMaterial);
-        top.position.y = height - 0.08;
-        top.castShadow = true;
-        top.receiveShadow = true;
-        desk.add(top);
+        const topThickness = 0.15;
+        if (powerChannel) {
+            // ---- Split tabletop into two boards with a center gap ----
+            const gapWidth = 0.12; // small gap between the two boards
+            const boardWidth = (width - gapWidth) / 2;
+            const boardGeo = new THREE.BoxGeometry(boardWidth, topThickness, depth);
+
+            const leftTop = new THREE.Mesh(boardGeo, deskMaterial);
+            leftTop.position.set(-(gapWidth / 2 + boardWidth / 2), height - 0.08, 0);
+            leftTop.castShadow = true;
+            leftTop.receiveShadow = true;
+            desk.add(leftTop);
+
+            const rightTop = new THREE.Mesh(boardGeo, deskMaterial);
+            rightTop.position.set(gapWidth / 2 + boardWidth / 2, height - 0.08, 0);
+            rightTop.castShadow = true;
+            rightTop.receiveShadow = true;
+            desk.add(rightTop);
+
+            // ---- Power channel recessed in the center gap ----
+            const surfaceY = leftTop.position.y + topThickness / 2;
+
+            // Metal channel running along table depth, slightly recessed
+            const channelWidth = gapWidth * 0.9;
+            const channelLength = depth * 0.95;
+            const channelThickness = 0.02;
+            const channelRecess = 0.012; // sink below surface a bit
+            const channel = new THREE.Mesh(
+                new THREE.BoxGeometry(channelWidth, channelThickness, channelLength),
+                powerChannelMaterial
+            );
+            channel.position.set(0, surfaceY - channelRecess - channelThickness / 2, 0);
+            channel.castShadow = false;
+            channel.receiveShadow = true;
+            desk.add(channel);
+
+            // End covers similar to photo
+            const capHeight = 0.06;
+            const capLength = 0.16;
+            [-1, 1].forEach(sign => {
+                const cap = new THREE.Mesh(
+                    new THREE.BoxGeometry(channelWidth, capHeight, capLength),
+                    powerStripMaterial
+                );
+                cap.position.set(0, channel.position.y + channelThickness / 2 + capHeight / 2 + 0.004, sign * (channelLength / 2 - capLength / 2));
+                cap.castShadow = true;
+                cap.receiveShadow = true;
+                desk.add(cap);
+            });
+
+            // Reusable geometries for strips
+            const stripHeight = 0.05;
+            const stripLength = 1.1;
+            const stripWidth = 0.18;
+            const stripY = channel.position.y + channelThickness / 2 + stripHeight / 2 + 0.01;
+            const holeGeo = new THREE.CylinderGeometry(0.045, 0.045, 0.02, 16);
+            const ledGeo = new THREE.SphereGeometry(0.02, 12, 12);
+
+            function addStrip(zCenter) {
+                const strip = new THREE.Mesh(
+                    new THREE.BoxGeometry(stripWidth, stripHeight, stripLength),
+                    powerStripMaterial
+                );
+                strip.position.set(0, stripY, zCenter);
+                strip.castShadow = true;
+                strip.receiveShadow = true;
+                desk.add(strip);
+
+                // Add five sockets
+                const socketSpacing = stripLength / 6;
+                for (let i = 0; i < 5; i++) {
+                    const hole = new THREE.Mesh(holeGeo, powerHoleMaterial);
+                    hole.position.set(0, stripHeight / 2 + 0.008, -stripLength / 2 + socketSpacing + i * socketSpacing);
+                    strip.add(hole);
+                }
+
+                // Small LED indicator near one end
+                const led = new THREE.Mesh(ledGeo, powerLedMaterial);
+                led.position.set(stripWidth / 2 - 0.035, stripHeight / 2 + 0.01, stripLength / 2 - 0.1);
+                strip.add(led);
+            }
+
+            // Two strips per table, spaced along the channel
+            const stripOffset = depth * 0.25; // place roughly at 1/4 and -1/4 depth
+            addStrip(stripOffset);
+            addStrip(-stripOffset);
+        } else {
+            // Plain single-piece top for regular desks
+            const topGeo = new THREE.BoxGeometry(width, topThickness, depth);
+            const top = new THREE.Mesh(topGeo, deskMaterial);
+            top.position.y = height - 0.08;
+            top.castShadow = true;
+            top.receiveShadow = true;
+            desk.add(top);
+        }
 
         // Legs 
         const legHeight = height - 0.1;
@@ -1149,30 +1260,30 @@ function init() {
         // -------------------------------------
     }
 
-    // CENTER: 4 tables facing 4 tables (8 total) 
+    // CENTER: single combined table with one channel and 8 strips
     const centerDeskWidth = individualDeskWidth;
     const centerDeskDepth = individualDeskDepth;
     const centerSpacingZ = individualDeskDepth;
     const centerStartZ = -5;
-    const centerGap = 0; // Gap between left and right center tables
+    const centerGap = 0;
+    const centerRows = 4;
 
-    for (let i = 0; i < 4; i++) {
+    // Create one big table covering the center rows
+    const combinedWidth = centerDeskWidth * 2;
+    const combinedDepth = centerSpacingZ * centerRows;
+    const combinedZCenter = centerStartZ + ((centerRows - 1) * centerSpacingZ) / 2;
+
+    const centerDesk = createDesk(combinedWidth, combinedDepth, deskHeight, { powerChannel: true });
+    centerDesk.position.set(0, 0, combinedZCenter);
+    scene.add(centerDesk);
+
+    // Chairs remain per row on each side
+    for (let i = 0; i < centerRows; i++) {
         const zPos = centerStartZ + i * centerSpacingZ;
-
-        // Left side of center (4 tables) 
         const xPosLeft = -centerGap / 2 - centerDeskWidth / 2;
-        const deskLeft = createDesk(centerDeskWidth, centerDeskDepth, deskHeight);
-        deskLeft.position.set(xPosLeft, 0, zPos);
-        scene.add(deskLeft);
+        const xPosRight = centerGap / 2 + centerDeskWidth / 2;
 
         createChair(xPosLeft - centerDeskWidth / 2 - 0.6, 0, zPos, -Math.PI / 2); // Chair on LEFT side
-
-        // Right side of center (4 tables) 
-        const xPosRight = centerGap / 2 + centerDeskWidth / 2;
-        const deskRight = createDesk(centerDeskWidth, centerDeskDepth, deskHeight);
-        deskRight.position.set(xPosRight, 0, zPos);
-        scene.add(deskRight);
-
         createChair(xPosRight + centerDeskWidth / 2 + 0.6, 0, zPos, Math.PI / 2); // Chair on RIGHT side
     }
     scene.updateMatrixWorld(true);

@@ -237,10 +237,10 @@ function init() {
         transparent: true,
         thickness: 0.5
     });
-    const cabinetMaterial = new THREE.MeshStandardMaterial({
-        color: 0xf0f0f0, roughness: 0.5, metalness: 0.1
-    });
-    const cabinetHandleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
+    // const cabinetMaterial = new THREE.MeshStandardMaterial({
+    //     color: 0xf0f0f0, roughness: 0.5, metalness: 0.1
+    // });
+    // const cabinetHandleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
 
     const legMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -281,64 +281,64 @@ function init() {
     // --- BACK WALL & WINDOWS (Fixed: Brown Backing Behind AC) ---
     const backWallGroup = new THREE.Group();
     const windowHeight = 6.8; // FIXED: 7.0 was too big (Room is only 4.5!)
-    const windowY = 2.0;      
-    const windowWidth = roomWidth - 0.3; 
-    
+    const windowY = 2.0;
+    const windowWidth = roomWidth - 0.3;
+
     // 1. Bottom Wall (White)
     const wallBottom = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, windowY, 0.2), wallMaterial);
-    wallBottom.position.set(0, windowY/2, 0);
+    wallBottom.position.set(0, windowY / 2, 0);
     backWallGroup.add(wallBottom);
 
     // 2. Top Wall (Backing behind AC) -> CHANGED TO BROWN (accentMaterial)
     const wallTopH = roomHeight - (windowY + windowHeight);
     // Use Math.max to prevent negative height if numbers are tweaked
-    const safeTopH = Math.max(0.1, wallTopH); 
-    
+    const safeTopH = Math.max(0.1, wallTopH);
+
     const wallTop = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, safeTopH, 0.2), accentMaterial); // <--- CHANGED MATERIAL
-    wallTop.position.set(0, windowY + windowHeight + safeTopH/2, 0);
+    wallTop.position.set(0, windowY + windowHeight + safeTopH / 2, 0);
     backWallGroup.add(wallTop);
 
     // --- BROWN CORNER PILLARS ---
-    const pillarWidth = 1.6; 
+    const pillarWidth = 1.6;
     const pillarGeo = new THREE.BoxGeometry(pillarWidth, roomHeight, 0.4); // Depth 0.4 to pop out
-    
+
     // Left Pillar
     const pillarL = new THREE.Mesh(pillarGeo, accentMaterial);
-    pillarL.position.set(-roomWidth/2 + pillarWidth/2, roomHeight/2, 0.4); 
+    pillarL.position.set(-roomWidth / 2 + pillarWidth / 2, roomHeight / 2, 0.4);
     backWallGroup.add(pillarL);
 
     // Right Pillar
     const pillarR = new THREE.Mesh(pillarGeo, accentMaterial);
-    pillarR.position.set(roomWidth/2 - pillarWidth/2, roomHeight/2, 0.4);
+    pillarR.position.set(roomWidth / 2 - pillarWidth / 2, roomHeight / 2, 0.4);
     backWallGroup.add(pillarR);
 
     // --- BROWN TOP BEAM (Connecting Pillars) ---
     // Added this to ensure the brown section looks solid behind the AC
     const topDeco = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, 0.8, 0.25), accentMaterial);
-    topDeco.position.set(0, 4.1, 0); 
+    topDeco.position.set(0, 4.1, 0);
     backWallGroup.add(topDeco);
 
     // 3. Side Fillers (White parts left/right of window)
-    const sideFillerWidth = (roomWidth - windowWidth) / 2; 
+    const sideFillerWidth = (roomWidth - windowWidth) / 2;
     const sideGeo = new THREE.BoxGeometry(sideFillerWidth + 0.05, windowHeight, 0.2);
-    
+
     const sideL = new THREE.Mesh(sideGeo, wallMaterial);
-    sideL.position.set(-roomWidth/2 + sideFillerWidth/2, windowY + windowHeight/2, 0);
+    sideL.position.set(-roomWidth / 2 + sideFillerWidth / 2, windowY + windowHeight / 2, 0);
     backWallGroup.add(sideL);
 
     const sideR = new THREE.Mesh(sideGeo, wallMaterial);
-    sideR.position.set(roomWidth/2 - sideFillerWidth/2, windowY + windowHeight/2, 0);
+    sideR.position.set(roomWidth / 2 - sideFillerWidth / 2, windowY + windowHeight / 2, 0);
     backWallGroup.add(sideR);
 
-    backWallGroup.position.z = -roomLength/2 - 0.1;
+    backWallGroup.position.z = -roomLength / 2 - 0.1;
     scene.add(backWallGroup);
 
     // Glass Window
     const glassWindow = new THREE.Mesh(new THREE.PlaneGeometry(windowWidth, windowHeight), glassMaterial);
-    glassWindow.position.set(0, windowY + windowHeight/2, -roomLength/2);
-    glassWindow.material.side = THREE.DoubleSide; 
+    glassWindow.position.set(0, windowY + windowHeight / 2, -roomLength / 2);
+    glassWindow.material.side = THREE.DoubleSide;
     scene.add(glassWindow);
-    
+
     // Window frame
     const windowFrameMaterial = new THREE.MeshStandardMaterial({
         color: 0xcccccc,
@@ -795,13 +795,13 @@ function init() {
     const gltfLoader = new THREE.GLTFLoader();
     gltfLoader.load('models/air_condition_daikin.glb', function (gltf) {
         const ac = gltf.scene;
-        ac.scale.set(1.5, 1.5, 1.5); 
-        ac.rotation.y = 0; 
-        
+        ac.scale.set(1.5, 1.5, 1.5);
+        ac.rotation.y = 0;
+
         // MOVED Y UP TO 4.2 (Very close to ceiling)
-        ac.position.set(0, 9.5, -roomLength/2 + 0.9); 
-        
-        ac.traverse(n => { if(n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
+        ac.position.set(0, 9.5, -roomLength / 2 + 0.9);
+
+        ac.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
         scene.add(ac);
     }, undefined, function (e) { console.error(e); });
     // SE Logo
@@ -1088,14 +1088,14 @@ function init() {
     const frontStartX = -roomWidth / 2 + 2;
     const frontSpacing = 2.05;
 
-    for (let i = 0; i < 14; i++) {
-        const testX = frontStartX + i * frontSpacing;
+    // for (let i = 0; i < 14; i++) {
+    //     const testX = frontStartX + i * frontSpacing;
 
-        // Check distance to door (doorX is 5)
-        if (Math.abs(testX - doorX) > 3.0 && testX < roomWidth / 2 - 1) {
-            createCabinet(testX, roomLength / 2 - 0.3, Math.PI);
-        }
-    }
+    //     // Check distance to door (doorX is 5)
+    //     if (Math.abs(testX - doorX) > 3.0 && testX < roomWidth / 2 - 1) {
+    //         createCabinet(testX, roomLength / 2 - 0.3, Math.PI);
+    //     }
+    // }
 
     // LEFT WALL: 8 individual tables 
     const numLeftTables = 8;
@@ -1177,6 +1177,255 @@ function init() {
     }
     scene.updateMatrixWorld(true);
 
+    // Create Bookshelf and Cabinet System
+    function createBookshelfAndCabinet() {
+        const group = new THREE.Group();
+
+        const woodMaterial = deskMaterial;
+        const separatorMaterial = woodMaterial;
+
+        // Dimensions
+        const totalTargetWidth = 18.0;
+        const separatorWidth = 0.4;
+        // const cornerBlockWidth = 0.8;
+
+        const availableWidth = totalTargetWidth - (2 * separatorWidth);
+        const baseWidth = availableWidth / 4;
+
+        const leftWidth = baseWidth;
+        const middleWidth = baseWidth * 2;
+        const rightWidth = baseWidth;
+
+        const depth = 0.8;
+
+        const bottomCabinetHeight = 3.5;
+        const bookshelfHeight = 4.0;
+        const topCabinetHeight = 2.625;
+        const horizontalSeparatorHeight = 0.05;
+
+        const leftDoors = 2;
+        const middleDoors = 4;
+        const rightDoors = 2;
+
+        function createCabinet(width, height, depth, doors) {
+            const cabinetGroup = new THREE.Group();
+            const wallThickness = 0.05;
+            const back = new THREE.Mesh(new THREE.BoxGeometry(width, height, wallThickness), woodMaterial);
+            back.position.z = -depth / 2 + wallThickness / 2;
+            cabinetGroup.add(back);
+
+            const sideGeo = new THREE.BoxGeometry(wallThickness, height, depth);
+            const leftSide = new THREE.Mesh(sideGeo, woodMaterial);
+            leftSide.position.x = -width / 2 + wallThickness / 2;
+            cabinetGroup.add(leftSide);
+            const rightSide = new THREE.Mesh(sideGeo, woodMaterial);
+            rightSide.position.x = width / 2 - wallThickness / 2;
+            cabinetGroup.add(rightSide);
+
+            const plateGeo = new THREE.BoxGeometry(width, wallThickness, depth);
+            const topPlate = new THREE.Mesh(plateGeo, woodMaterial);
+            topPlate.position.y = height / 2 - wallThickness / 2;
+            cabinetGroup.add(topPlate);
+            const bottomPlate = new THREE.Mesh(plateGeo, woodMaterial);
+            bottomPlate.position.y = -height / 2 + wallThickness / 2;
+            cabinetGroup.add(bottomPlate);
+
+            const frameThickness = 0.02;
+            const doorWidth = (width - frameThickness * (doors + 1)) / doors;
+            const doorHeight = height - 2 * frameThickness;
+            const doorDepth = 0.03;
+
+            let doorX = -width / 2 + frameThickness + doorWidth / 2;
+
+            for (let i = 0; i < doors; i++) {
+                const door = new THREE.Mesh(
+                    new THREE.BoxGeometry(doorWidth, doorHeight, doorDepth),
+                    woodMaterial
+                );
+                door.position.set(doorX, 0, depth / 2 - doorDepth / 2);
+                door.castShadow = true;
+                cabinetGroup.add(door);
+                doorX += doorWidth + frameThickness;
+            }
+            return cabinetGroup;
+        }
+
+        function createBookshelf(width, height, depth, isHollow, config) {
+            const shelfGroup = new THREE.Group();
+            const wallThickness = 0.05;
+
+            const actualDepth = isHollow ? depth + 0.5 : depth;
+            const zOffset = isHollow ? -0.25 : 0;
+
+            if (!isHollow) {
+                const back = new THREE.Mesh(new THREE.BoxGeometry(width, height, wallThickness), woodMaterial);
+                back.position.z = -depth / 2 + wallThickness / 2;
+                back.castShadow = true;
+                back.receiveShadow = true;
+                shelfGroup.add(back);
+            } else {
+                const back = new THREE.Mesh(new THREE.BoxGeometry(width, height, wallThickness), woodMaterial);
+                back.position.z = -actualDepth / 2 + wallThickness / 2 + zOffset;
+                back.castShadow = true;
+                back.receiveShadow = true;
+                shelfGroup.add(back);
+
+                const extDepth = actualDepth;
+                const extPlateGeo = new THREE.BoxGeometry(width, wallThickness, extDepth);
+
+                const topPlate = new THREE.Mesh(extPlateGeo, woodMaterial);
+                topPlate.position.set(0, height / 2 - wallThickness / 2, zOffset);
+                shelfGroup.add(topPlate);
+
+                const bottomPlate = new THREE.Mesh(extPlateGeo, woodMaterial);
+                bottomPlate.position.set(0, -height / 2 + wallThickness / 2, zOffset);
+                shelfGroup.add(bottomPlate);
+            }
+
+            const sideGeo = new THREE.BoxGeometry(wallThickness, height, isHollow ? actualDepth : depth);
+            const leftSide = new THREE.Mesh(sideGeo, woodMaterial);
+            leftSide.position.set(-width / 2 + wallThickness / 2, 0, isHollow ? zOffset : 0);
+            leftSide.castShadow = true;
+            shelfGroup.add(leftSide);
+
+            const rightSide = new THREE.Mesh(sideGeo, woodMaterial);
+            rightSide.position.set(width / 2 - wallThickness / 2, 0, isHollow ? zOffset : 0);
+            rightSide.castShadow = true;
+            shelfGroup.add(rightSide);
+
+            // --- INTERNAL SHELVES & DIVIDERS (Spacings) ---
+            if (config) {
+                // Horizontal Shelves
+                if (config.horizontalShelves > 0) {
+                    const shelfSpacing = height / (config.horizontalShelves + 1);
+                    const shelfGeo = new THREE.BoxGeometry(width - wallThickness * 2, wallThickness, isHollow ? actualDepth - 0.1 : depth - 0.1);
+
+                    for (let i = 1; i <= config.horizontalShelves; i++) {
+                        const shelf = new THREE.Mesh(shelfGeo, woodMaterial);
+                        shelf.position.set(0, -height / 2 + i * shelfSpacing, isHollow ? zOffset : 0);
+                        shelf.castShadow = true;
+                        shelf.receiveShadow = true;
+                        shelfGroup.add(shelf);
+                    }
+                }
+
+                // Vertical Dividers
+                if (config.verticalDividers > 0) {
+                    const divSpacing = width / (config.verticalDividers + 1);
+                    const divGeo = new THREE.BoxGeometry(wallThickness, height - wallThickness * 2, isHollow ? actualDepth - 0.1 : depth - 0.1);
+
+                    for (let i = 1; i <= config.verticalDividers; i++) {
+                        const div = new THREE.Mesh(divGeo, woodMaterial);
+                        div.position.set(-width / 2 + i * divSpacing, 0, isHollow ? zOffset : 0);
+                        div.castShadow = true;
+                        div.receiveShadow = true;
+                        shelfGroup.add(div);
+                    }
+                }
+            }
+
+            if (!isHollow) {
+                const plateGeo = new THREE.BoxGeometry(width, wallThickness, depth);
+                const topPlate = new THREE.Mesh(plateGeo, woodMaterial);
+                topPlate.position.y = height / 2 - wallThickness / 2;
+                topPlate.castShadow = true;
+                topPlate.receiveShadow = true;
+                shelfGroup.add(topPlate);
+
+                const bottomPlate = new THREE.Mesh(plateGeo, woodMaterial);
+                bottomPlate.position.y = -height / 2 + wallThickness / 2;
+                bottomPlate.castShadow = true;
+                bottomPlate.receiveShadow = true;
+                shelfGroup.add(bottomPlate);
+
+                const shelfGeo = new THREE.BoxGeometry(width - 2 * wallThickness, wallThickness, depth - wallThickness);
+                const shelf = new THREE.Mesh(shelfGeo, woodMaterial);
+                shelf.position.z = wallThickness / 2;
+                shelf.castShadow = true;
+                shelf.receiveShadow = true;
+                shelfGroup.add(shelf);
+            }
+
+            return shelfGroup;
+        }
+
+        function createVerticalSection(width, doors, topDoors, isHollow, shelfConfig) {
+            const sectionGroup = new THREE.Group();
+
+            const bottomCabinet = createCabinet(width, bottomCabinetHeight, depth, doors);
+            bottomCabinet.position.y = bottomCabinetHeight / 2;
+            sectionGroup.add(bottomCabinet);
+
+            const hSeparator1 = new THREE.Mesh(new THREE.BoxGeometry(width, horizontalSeparatorHeight, depth), separatorMaterial);
+            hSeparator1.position.y = bottomCabinetHeight + horizontalSeparatorHeight / 2;
+            hSeparator1.castShadow = true;
+            sectionGroup.add(hSeparator1);
+
+            const bookshelf = createBookshelf(width, bookshelfHeight, depth, isHollow, shelfConfig);
+            bookshelf.position.y = bottomCabinetHeight + horizontalSeparatorHeight + bookshelfHeight / 2;
+            sectionGroup.add(bookshelf);
+
+            const hSeparator2 = new THREE.Mesh(new THREE.BoxGeometry(width, horizontalSeparatorHeight, depth), separatorMaterial);
+            hSeparator2.position.y = bottomCabinetHeight + horizontalSeparatorHeight + bookshelfHeight + horizontalSeparatorHeight / 2;
+            hSeparator2.castShadow = true;
+            sectionGroup.add(hSeparator2);
+
+            const topCabinet = createCabinet(width, topCabinetHeight, depth, topDoors);
+            topCabinet.position.y = bottomCabinetHeight + horizontalSeparatorHeight * 2 + bookshelfHeight + topCabinetHeight / 2;
+            sectionGroup.add(topCabinet);
+
+            return sectionGroup;
+        }
+
+        const totalHeight = bottomCabinetHeight + bookshelfHeight + topCabinetHeight + 2 * horizontalSeparatorHeight;
+        let currentX = -totalTargetWidth / 2;
+
+        // const cornerBlock = new THREE.Mesh(
+        //     new THREE.BoxGeometry(cornerBlockWidth, totalHeight, depth),
+        //     woodMaterial
+        // );
+        // cornerBlock.position.set(currentX + cornerBlockWidth / 2, totalHeight / 2, 0);
+        // cornerBlock.castShadow = true;
+        // group.add(cornerBlock);
+        // currentX += cornerBlockWidth;
+
+        const leftSection = createVerticalSection(leftWidth, leftDoors, leftDoors, true, { horizontalShelves: 1, verticalDividers: 0 });
+        leftSection.position.x = currentX + leftWidth / 2;
+        group.add(leftSection);
+        currentX += leftWidth;
+
+        currentX += separatorWidth / 2;
+        const separator1 = new THREE.Mesh(new THREE.BoxGeometry(separatorWidth, totalHeight, depth), separatorMaterial);
+        separator1.position.x = currentX;
+        separator1.position.y = totalHeight / 2;
+        group.add(separator1);
+        currentX += separatorWidth / 2;
+
+        const middleSection = createVerticalSection(middleWidth, middleDoors, middleDoors, true, { horizontalShelves: 1, verticalDividers: 1 });
+        middleSection.position.x = currentX + middleWidth / 2;
+        group.add(middleSection);
+        currentX += middleWidth;
+
+        currentX += separatorWidth / 2;
+        const separator2 = new THREE.Mesh(new THREE.BoxGeometry(separatorWidth, totalHeight, depth), separatorMaterial);
+        separator2.position.x = currentX;
+        separator2.position.y = totalHeight / 2;
+        group.add(separator2);
+        currentX += separatorWidth / 2;
+
+        const rightSection = createVerticalSection(rightWidth, rightDoors, rightDoors, true, { horizontalShelves: 1, verticalDividers: 0 });
+        rightSection.position.x = currentX + rightWidth / 2;
+        group.add(rightSection);
+
+        group.rotation.y = Math.PI;
+        group.position.set(4.5, 0, 18);
+        group.userData.collidable = true;
+
+        scene.add(group);
+    }
+
+    createBookshelfAndCabinet();
+
     collisionObstacles = [];
     scene.traverse(function (object) {
         if (object.userData.collidable === true) {
@@ -1192,40 +1441,40 @@ function init() {
 
 
     // --- 2. DEFINE THE FUNCTION ---
-    function createCabinet(x, z, rotationY) {
-        const cabGroup = new THREE.Group();
-        cabGroup.userData.collidable = true;
+    // function createCabinet(x, z, rotationY) {
+    //     const cabGroup = new THREE.Group();
+    //     cabGroup.userData.collidable = true;
 
-        // Body
-        const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 0.6), cabinetMaterial);
-        body.position.y = 0.6;
-        body.castShadow = true;
-        cabGroup.add(body);
+    //     // Body
+    //     const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 0.6), cabinetMaterial);
+    //     body.position.y = 0.6;
+    //     body.castShadow = true;
+    //     cabGroup.add(body);
 
-        // Gap (Visual detail)
-        const gap = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.1, 0.61), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
-        gap.position.set(0, 0.6, 0);
-        cabGroup.add(gap);
+    //     // Gap (Visual detail)
+    //     const gap = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.1, 0.61), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
+    //     gap.position.set(0, 0.6, 0);
+    //     cabGroup.add(gap);
 
-        // Handles
-        const hGeo = new THREE.BoxGeometry(0.05, 0.2, 0.02);
-        const h1 = new THREE.Mesh(hGeo, cabinetHandleMat); h1.position.set(-0.1, 0.9, 0.31); cabGroup.add(h1);
-        const h2 = new THREE.Mesh(hGeo, cabinetHandleMat); h2.position.set(0.1, 0.9, 0.31); cabGroup.add(h2);
+    //     // Handles
+    //     const hGeo = new THREE.BoxGeometry(0.05, 0.2, 0.02);
+    //     const h1 = new THREE.Mesh(hGeo, cabinetHandleMat); h1.position.set(-0.1, 0.9, 0.31); cabGroup.add(h1);
+    //     const h2 = new THREE.Mesh(hGeo, cabinetHandleMat); h2.position.set(0.1, 0.9, 0.31); cabGroup.add(h2);
 
-        // Kickplate
-        const kick = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.1, 0.58), new THREE.MeshStandardMaterial({ color: 0x333333 }));
-        kick.position.set(0, 0.05, 0);
-        cabGroup.add(kick);
+    //     // Kickplate
+    //     const kick = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.1, 0.58), new THREE.MeshStandardMaterial({ color: 0x333333 }));
+    //     kick.position.set(0, 0.05, 0);
+    //     cabGroup.add(kick);
 
-        cabGroup.position.set(x, 0, z);
-        cabGroup.rotation.y = rotationY;
-        scene.add(cabGroup);
+    //     cabGroup.position.set(x, 0, z);
+    //     cabGroup.rotation.y = rotationY;
+    //     scene.add(cabGroup);
 
-        // Add collision box
-        scene.updateMatrixWorld(true);
-        const box = new THREE.Box3().setFromObject(cabGroup);
-        collisionObstacles.push(box);
-    }
+    //     // Add collision box
+    //     scene.updateMatrixWorld(true);
+    //     const box = new THREE.Box3().setFromObject(cabGroup);
+    //     collisionObstacles.push(box);
+    // }
     // Window resize
     window.addEventListener('resize', onWindowResize, false);
 }

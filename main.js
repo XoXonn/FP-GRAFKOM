@@ -1529,7 +1529,7 @@ function init() {
         group.add(rightSection);
 
         group.rotation.y = Math.PI;
-        group.position.set(4.5, 0, 18);
+        group.position.set(4.5, 0, 16);
         group.userData.collidable = true;
 
         scene.add(group);

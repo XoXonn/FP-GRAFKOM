@@ -1511,6 +1511,14 @@ const onKeyDown = function (event) {
         const woodMaterial = deskMaterial;
         const separatorMaterial = woodMaterial;
 
+        // Load Book Texture
+        const bookTexture = new THREE.TextureLoader().load('img/rakbuku1_1.png');
+        const bookMaterial = new THREE.MeshStandardMaterial({
+            map: bookTexture,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
         // Dimensions
         const totalTargetWidth = 18.0;
         const separatorWidth = 0.4;
@@ -1636,6 +1644,18 @@ const onKeyDown = function (event) {
                         shelf.receiveShadow = true;
                         shelfGroup.add(shelf);
                     }
+
+                    // Add Fake Books to Top Compartment (User Request)
+                    if (config.showBooks) {
+                        // shelfSpacing is already defined above
+                        const compartmentHeight = shelfSpacing;
+                        const topCompY = -height / 2 + (config.horizontalShelves + 0.5) * shelfSpacing;
+
+                        const bookGeo = new THREE.PlaneGeometry(width * 1.6, compartmentHeight * 1.6);
+                        const bookPlane = new THREE.Mesh(bookGeo, bookMaterial);
+                        bookPlane.position.set(-0.39, topCompY + 0.07, actualDepth / 2 - 0.2 + (isHollow ? zOffset : 0));
+                        shelfGroup.add(bookPlane);
+                    }
                 }
 
                 // Vertical Dividers
@@ -1730,7 +1750,7 @@ const onKeyDown = function (event) {
         group.add(separatorLeft);
         currentX += separatorWidth;
 
-        const leftSection = createVerticalSection(leftWidth, leftDoors, leftDoors, true, { horizontalShelves: 1, verticalDividers: 0 });
+        const leftSection = createVerticalSection(leftWidth, leftDoors, leftDoors, true, { horizontalShelves: 1, verticalDividers: 0, showBooks: true });
         leftSection.position.x = currentX + leftWidth / 2;
         group.add(leftSection);
         currentX += leftWidth;

@@ -1456,10 +1456,17 @@ function init() {
         const woodMaterial = deskMaterial;
         const separatorMaterial = woodMaterial;
 
-        // Load Book Texture
-        const bookTexture = new THREE.TextureLoader().load('img/rakbuku1_1.png');
-        const bookMaterial = new THREE.MeshStandardMaterial({
-            map: bookTexture,
+        // Load Book Textures
+        const bookTexture1 = new THREE.TextureLoader().load('img/rakbuku1_1.png');
+        const bookMaterial1 = new THREE.MeshStandardMaterial({
+            map: bookTexture1,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        const bookTexture2 = new THREE.TextureLoader().load('img/rakbuku1_2.png');
+        const bookMaterial2 = new THREE.MeshStandardMaterial({
+            map: bookTexture2,
             transparent: true,
             side: THREE.DoubleSide
         });
@@ -1590,16 +1597,46 @@ function init() {
                         shelfGroup.add(shelf);
                     }
 
-                    // Add Fake Books to Top Compartment (User Request)
-                    if (config.showBooks) {
-                        // shelfSpacing is already defined above
+                    // Add Fake Books (Array of { col: number, material: THREE.Material })
+                    if (config.books && config.books.length > 0) {
                         const compartmentHeight = shelfSpacing;
                         const topCompY = -height / 2 + (config.horizontalShelves + 0.5) * shelfSpacing;
 
-                        const bookGeo = new THREE.PlaneGeometry(width * 1.6, compartmentHeight * 1.6);
-                        const bookPlane = new THREE.Mesh(bookGeo, bookMaterial);
-                        bookPlane.position.set(-0.39, topCompY + 0.07, actualDepth / 2 - 0.2 + (isHollow ? zOffset : 0));
-                        shelfGroup.add(bookPlane);
+                        // Calculate column width/spacing
+                        // Total width divided by (verticalDividers + 1) columns
+                        const colWidth = width / (config.verticalDividers + 1);
+
+                        config.books.forEach(bookConfig => {
+                            const bookConfScale = bookConfig.scale || { x: 1, y: 1 };
+                            const bookConfOffset = bookConfig.offset || { x: 0, y: 0, z: 0 };
+                            const bookAlign = bookConfig.align || 'center';
+
+                            const bookGeo = new THREE.PlaneGeometry(colWidth * 0.9, compartmentHeight * 0.85);
+                            const bookPlane = new THREE.Mesh(bookGeo, bookConfig.material);
+                            bookPlane.scale.set(bookConfScale.x, bookConfScale.y, 1);
+
+                            // Calculate X center for the specific column
+                            // Col 0 center: -width/2 + colWidth/2
+                            let centerX = -width / 2 + colWidth / 2 + bookConfig.col * colWidth;
+
+                            // Alignment Logic
+                            const bookWidth = (colWidth * 0.9) * bookConfScale.x;
+                            const padding = 0.05; // gap from side
+
+                            if (bookAlign === 'left') {
+                                centerX = (-width / 2 + bookConfig.col * colWidth) + bookWidth / 2 + padding;
+                            } else if (bookAlign === 'right') {
+                                centerX = (-width / 2 + (bookConfig.col + 1) * colWidth) - bookWidth / 2 - padding;
+                            }
+
+                            // Apply final position with offsets
+                            bookPlane.position.set(
+                                centerX + bookConfOffset.x,
+                                topCompY + bookConfOffset.y,
+                                actualDepth / 2 - 0.2 + (isHollow ? zOffset : 0) + bookConfOffset.z
+                            );
+                            shelfGroup.add(bookPlane);
+                        });
                     }
                 }
 
@@ -1695,7 +1732,17 @@ function init() {
         group.add(separatorLeft);
         currentX += separatorWidth;
 
-        const leftSection = createVerticalSection(leftWidth, leftDoors, leftDoors, true, { horizontalShelves: 1, verticalDividers: 0, showBooks: true });
+        const leftSection = createVerticalSection(leftWidth, leftDoors, leftDoors, true, {
+            horizontalShelves: 1,
+            verticalDividers: 0,
+            books: [{
+                col: 0,
+                material: bookMaterial1,
+                align: 'right',
+                scale: { x: 2, y: 2 },
+                offset: { x: +1.1, y: +0.08, z: 0 }
+            }]
+        });
         leftSection.position.x = currentX + leftWidth / 2;
         group.add(leftSection);
         currentX += leftWidth;
@@ -1707,7 +1754,17 @@ function init() {
         group.add(separator1);
         currentX += separatorWidth / 2;
 
-        const middleSection = createVerticalSection(middleWidth, middleDoors, middleDoors, true, { horizontalShelves: 1, verticalDividers: 1 });
+        const middleSection = createVerticalSection(middleWidth, middleDoors, middleDoors, true, {
+            horizontalShelves: 1,
+            verticalDividers: 1,
+            books: [{
+                col: 0,
+                material: bookMaterial2,
+                align: 'center',
+                scale: { x: 1.1, y: 1.1 },
+                offset: { x: +0.1, y: -0.08, z: 0 }
+            }]
+        });
         middleSection.position.x = currentX + middleWidth / 2;
         group.add(middleSection);
         currentX += middleWidth;

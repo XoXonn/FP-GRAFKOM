@@ -17,6 +17,10 @@ let prevTime = performance.now();
 let lightsOn = true;
 let toggleableLights = []; // Array to hold lights we can turn off
 let collisionObstacles = [];
+let coveLights = [];       // Array for the hidden strip lights
+let downLights = [];       // Array for the 4 recessed bulbs
+let coveActive = true;     // State for cove lights
+let downLightsActive = true; // State for bulbs
 // --- MODIFICATION: Room boundaries for collision ---
 const roomWidth = 28;
 const roomLength = 36;
@@ -81,7 +85,7 @@ function init() {
     scene.add(controls.getObject());
 
     // --- Key Listeners for Movement and Lights ---
-    const onKeyDown = function (event) {
+const onKeyDown = function (event) {
         switch (event.code) {
             case 'KeyW':
             case 'ArrowUp':
@@ -100,7 +104,13 @@ function init() {
                 moveRight = true;
                 break;
             case 'KeyL':
-                toggleLights(); // Toggle lights on/off
+                toggleMasterSwitch(); // New Master Toggle
+                break;
+            case 'Digit1': // Press '1'
+                toggleCoveLights();
+                break;
+            case 'Digit2': // Press '2'
+                toggleDownLights();
                 break;
         }
     };
@@ -216,7 +226,7 @@ function init() {
         map: plasterColor,
         roughnessMap: plasterRough,
         normalMap: plasterNorm,
-        color: 0xffffff, // Keep it white
+        color: 0xaaaaaa, // Keep it white
         roughness: 0.9   // Walls are usually matte/rough
     });
     const accentMaterial = new THREE.MeshStandardMaterial({
@@ -739,6 +749,7 @@ function init() {
     // ... (Add TV, Ceiling, Clock, AC, Logo objects here) ...
     // TV Screen with stand (in front of middle tables)
     const tvGroup = new THREE.Group();
+    tvGroup.userData.collidable = true;
 
     // TV Screen
     const tvScreenGeo = new THREE.BoxGeometry(7, 4.0, 0.15);
@@ -763,201 +774,220 @@ function init() {
     tvGroup.position.set(0, 0, -8);
     scene.add(tvGroup);
 
-    // Step ceiling design with border frame (like in photo)
-    const ceilingBorderWidth = 2.5;
-    const ceilingBorderDepth = 0.4;
-    const innerCeilingDepth = 0.3;
+// ==========================================
+    // --- NEW: COVE CEILING (Matches Pic 1) ---
+    // ==========================================
 
-    // Border lights (on the stepped border area - lower position)
-    const borderLightPositions = [
-        // Back side (4 lights)
-        [-6, -12], [-2, -12], [2, -12], [6, -12],
-        // Front side (4 lights)
-        [-6, 12], [-2, 12], [2, 12], [6, 12]
-    ];
+    // Configuration for the Ceiling Design
+    const dropCeilingHeight = roomHeight - 0.2; // The lower border height (e.g. 9.5)
+    const recessedHeight = roomHeight;          // The upper inner ceiling height (e.g. 11)
+    const coveWidth = 5.0;                      // How wide the border is
+    const stripThickness = 0.15;                // Thickness of the glowing light strip
 
-    borderLightPositions.forEach(([x, z]) => {
-        // Point light for each bulb (like real light bulb)
-        const pointLight = new THREE.PointLight(0xfff8f0, 0.9, 16, 2);
-        pointLight.position.set(x, roomHeight - ceilingBorderDepth - 0.5, z);
-        pointLight.castShadow = false;
-
-        scene.add(pointLight);
-        toggleableLights.push(pointLight);
-
-        // Recessed ceiling fixture (rim)
-        const fixtureRimGeo = new THREE.CylinderGeometry(0.22, 0.25, 0.15, 16);
-        const fixtureRimMat = new THREE.MeshStandardMaterial({
-            color: 0xe8e8e8,
-            roughness: 0.4,
-            metalness: 0.3
-        });
-        const fixtureRim = new THREE.Mesh(fixtureRimGeo, fixtureRimMat);
-        fixtureRim.position.set(x, roomHeight - ceilingBorderDepth - innerCeilingDepth - 0.05, z);
-        scene.add(fixtureRim);
-
-        // Light bulb (emissive sphere)
-        const bulbGeo = new THREE.SphereGeometry(0.12, 16, 16);
-        const bulbMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            emissive: 0xfff8f0,
-            emissiveIntensity: 0.6,
-            roughness: 0.2,
-            metalness: 0.0
-        });
-        const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
-        bulbMesh.position.set(x, roomHeight - ceilingBorderDepth - innerCeilingDepth - 0.25, z);
-        scene.add(bulbMesh);
-
-        // Store bulb reference for toggling emissive
-        toggleableLights.push({ bulb: bulbMesh, originalEmissive: 0xfff8f0, originalIntensity: 0.8 });
-    });
-
-    // Center ceiling lights (on the higher center part - 6 lights: 3 left, 3 right)
-    const centerLightPositions = [
-        // Left side (3 lights)
-        [-10, -6], [-10, 0], [-10, 6],
-        // Right side (3 lights)
-        [10, -6], [10, 0], [10, 6]
-    ];
-
-    centerLightPositions.forEach(([x, z]) => {
-        // Point light for each bulb (like real light bulb)
-        const pointLight = new THREE.PointLight(0xfff8f0, 0.9, 16, 2);
-        pointLight.position.set(x, roomHeight - 0.5, z);
-        pointLight.castShadow = false;
-
-        scene.add(pointLight);
-        toggleableLights.push(pointLight);
-
-        // Recessed ceiling fixture (rim)
-        const fixtureRimGeo = new THREE.CylinderGeometry(0.22, 0.25, 0.15, 16);
-        const fixtureRimMat = new THREE.MeshStandardMaterial({
-            color: 0xe8e8e8,
-            roughness: 0.4,
-            metalness: 0.3
-        });
-        const fixtureRim = new THREE.Mesh(fixtureRimGeo, fixtureRimMat);
-        fixtureRim.position.set(x, roomHeight - 0.08, z);
-        scene.add(fixtureRim);
-
-        // Light bulb (emissive sphere)
-        const bulbGeo = new THREE.SphereGeometry(0.12, 16, 16);
-        const bulbMat = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            emissive: 0xfff8f0,
-            emissiveIntensity: 0.6,
-            roughness: 0.2,
-            metalness: 0.0
-        });
-        const bulbMesh = new THREE.Mesh(bulbGeo, bulbMat);
-        bulbMesh.position.set(x, roomHeight - 0.25, z);
-        scene.add(bulbMesh);
-
-        // Store bulb reference for toggling emissive
-        toggleableLights.push({ bulb: bulbMesh, originalEmissive: 0xfff8f0, originalIntensity: 0.8 });
-    });
-
-    // Outer ceiling border frame
-    const ceilingGeometry = new THREE.PlaneGeometry(roomWidth, roomLength);
-    const ceilingMaterial = new THREE.MeshStandardMaterial({
-        map: ceilingColorTex,
-        roughnessMap: ceilingRoughTex,
-        normalMap: ceilingNormTex,
+// --- 1. Materials (ALL WHITE) ---
+    const cleanCeilingMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
-        roughness: 0.8
-        // Removed 'emissive' so the texture shadow details are visible
-    });
-    const ceiling = new THREE.Mesh(ceilingGeometry, ceilingMaterial);
-    ceiling.position.y = roomHeight;
-    ceiling.rotation.x = Math.PI / 2;
-    ceiling.receiveShadow = true;
-    scene.add(ceiling);
-
-    // Step down border (running around the perimeter)
-    const borderMaterial = new THREE.MeshStandardMaterial({
-        color: 0xe8e8e8,
-        roughness: 0.7
+        roughness: 0.8,
+        metalness: 0.05
     });
 
-    // Top border (front)
-    const borderTop = new THREE.Mesh(
-        new THREE.BoxGeometry(roomWidth, ceilingBorderDepth, ceilingBorderWidth),
-        borderMaterial
-    );
-    borderTop.position.set(0, roomHeight - ceilingBorderDepth / 2, roomLength / 2 - ceilingBorderWidth / 2);
-    scene.add(borderTop);
-
-    // Bottom border (back)
-    const borderBottom = new THREE.Mesh(
-        new THREE.BoxGeometry(roomWidth, ceilingBorderDepth, ceilingBorderWidth),
-        borderMaterial
-    );
-    borderBottom.position.set(0, roomHeight - ceilingBorderDepth / 2, -roomLength / 2 + ceilingBorderWidth / 2);
-    scene.add(borderBottom);
-
-    // Left border
-    const borderLeft = new THREE.Mesh(
-        new THREE.BoxGeometry(ceilingBorderWidth, ceilingBorderDepth, roomLength - ceilingBorderWidth * 2),
-        borderMaterial
-    );
-    borderLeft.position.set(-roomWidth / 2 + ceilingBorderWidth / 2, roomHeight - ceilingBorderDepth / 2, 0);
-    scene.add(borderLeft);
-
-    // Right border
-    const borderRight = new THREE.Mesh(
-        new THREE.BoxGeometry(ceilingBorderWidth, ceilingBorderDepth, roomLength - ceilingBorderWidth * 2),
-        borderMaterial
-    );
-    borderRight.position.set(roomWidth / 2 - ceilingBorderWidth / 2, roomHeight - ceilingBorderDepth / 2, 0);
-    scene.add(borderRight);
-
-    // Inner recessed ceiling (center area)
-    const innerCeilingWidth = roomWidth - ceilingBorderWidth * 2;
-    const innerCeilingLength = roomLength - ceilingBorderWidth * 2;
-    const innerCeilingMaterial = new THREE.MeshStandardMaterial({
-        map: ceilingColorTex,
-        roughnessMap: ceilingRoughTex,
-        normalMap: ceilingNormTex,
-        color: 0xf0f0f0, // Slightly darker/different shade for contrast
-        roughness: 0.9
+    // LED Strip Material (White Glow)
+    const ledStripMaterial = new THREE.MeshBasicMaterial({
+        color: 0xEBD8B5
     });
-    const innerCeiling = new THREE.Mesh(
-        new THREE.PlaneGeometry(innerCeilingWidth, innerCeilingLength),
-        innerCeilingMaterial
+
+    // Bulb Materials (On/Off states)
+    const bulbOnMaterial = new THREE.MeshStandardMaterial({
+        color: 0xEBD8B5,
+        emissive: 0xEBD8B5,
+        emissiveIntensity: 1.0
+    });
+    
+    // --- 2. Build the Drop Ceiling (Lower Border) ---
+    const sidePlankGeo = new THREE.BoxGeometry(coveWidth, 0.4, roomLength);
+    const ceilingLeft = new THREE.Mesh(sidePlankGeo, cleanCeilingMaterial);
+    ceilingLeft.position.set(-roomWidth/2 + coveWidth/2, dropCeilingHeight, 0);
+    ceilingLeft.receiveShadow = true;
+    scene.add(ceilingLeft);
+
+    const ceilingRight = new THREE.Mesh(sidePlankGeo, cleanCeilingMaterial);
+    ceilingRight.position.set(roomWidth/2 - coveWidth/2, dropCeilingHeight, 0);
+    ceilingRight.receiveShadow = true;
+    scene.add(ceilingRight);
+
+    const fbPlankWidth = roomWidth - (coveWidth * 2);
+    const fbPlankGeo = new THREE.BoxGeometry(fbPlankWidth, 0.4, coveWidth);
+    const ceilingFront = new THREE.Mesh(fbPlankGeo, cleanCeilingMaterial);
+    ceilingFront.position.set(0, dropCeilingHeight, -roomLength/2 + coveWidth/2);
+    ceilingFront.receiveShadow = true;
+    scene.add(ceilingFront);
+
+    const ceilingBack = new THREE.Mesh(fbPlankGeo, cleanCeilingMaterial);
+    ceilingBack.position.set(0, dropCeilingHeight, roomLength/2 - coveWidth/2);
+    ceilingBack.receiveShadow = true;
+    scene.add(ceilingBack);
+
+    // --- 3. Build the Recessed Ceiling (Upper Inner Plane) ---
+    const innerWidth = roomWidth - (coveWidth * 2);
+    const innerLength = roomLength - (coveWidth * 2);
+
+    const innerCeilingMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(innerWidth, innerLength),
+        cleanCeilingMaterial
     );
-    innerCeiling.position.set(0, roomHeight - ceilingBorderDepth - innerCeilingDepth, 0);
-    innerCeiling.rotation.x = Math.PI / 2;
-    innerCeiling.receiveShadow = true;
-    scene.add(innerCeiling);
+    innerCeilingMesh.rotation.x = Math.PI / 2;
+    innerCeilingMesh.position.set(0, recessedHeight, 0);
+    innerCeilingMesh.material.side = THREE.DoubleSide;
+    innerCeilingMesh.receiveShadow = true;
+    scene.add(innerCeilingMesh);
 
-    const clockRadius = 0.4;
-    const clockGeo = new THREE.CylinderGeometry(clockRadius, clockRadius, 0.1, 32);
-    const clockMaterial = new THREE.MeshStandardMaterial({ color: 0xe8e8e8 });
-    const clock = new THREE.Mesh(clockGeo, clockMaterial);
-    clock.rotation.z = Math.PI / 2;
-    clock.position.set(-roomWidth / 2 + 0.35, roomHeight - 1.8, roomLength / 4);
-    scene.add(clock);
-    const faceGeo = new THREE.CircleGeometry(clockRadius - 0.05, 32);
-    const faceMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
-    const face = new THREE.Mesh(faceGeo, faceMaterial);
-    face.rotation.y = Math.PI / 2;
-    face.position.set(-roomWidth / 2 + 0.37, roomHeight - 1.8, roomLength / 4);
-    scene.add(face);
-    const hourHandGeo = new THREE.BoxGeometry(0.02, 0.2, 0.05);
-    const minuteHandGeo = new THREE.BoxGeometry(0.02, 0.28, 0.04);
-    const handMaterial = new THREE.MeshStandardMaterial({ color: 0x333333 });
-    const hourHand = new THREE.Mesh(hourHandGeo, handMaterial);
-    hourHand.position.set(-roomWidth / 2 + 0.38, roomHeight - 1.8, roomLength / 4);
-    hourHand.rotation.y = Math.PI / 2;
-    hourHand.rotation.x = Math.PI / 6;
-    scene.add(hourHand);
-    const minuteHand = new THREE.Mesh(minuteHandGeo, handMaterial);
-    minuteHand.position.set(-roomWidth / 2 + 0.39, roomHeight - 1.8, roomLength / 4);
-    minuteHand.rotation.y = Math.PI / 2;
-    minuteHand.rotation.x = Math.PI / 3;
-    scene.add(minuteHand);
+    // --- 4. Vertical Connector Walls ---
+    const wallHeight = recessedHeight - dropCeilingHeight;
+    const vWallFB = new THREE.BoxGeometry(innerWidth + 0.2, wallHeight, 0.1);
+    const vWallLR = new THREE.BoxGeometry(0.1, wallHeight, innerLength + 0.2);
 
+    const vWallFront = new THREE.Mesh(vWallFB, cleanCeilingMaterial);
+    vWallFront.position.set(0, dropCeilingHeight + wallHeight/2, -innerLength/2 - 0.05);
+    scene.add(vWallFront);
+
+    const vWallBack = new THREE.Mesh(vWallFB, cleanCeilingMaterial);
+    vWallBack.position.set(0, dropCeilingHeight + wallHeight/2, innerLength/2 + 0.05);
+    scene.add(vWallBack);
+
+    const vWallLeft = new THREE.Mesh(vWallLR, cleanCeilingMaterial);
+    vWallLeft.position.set(-innerWidth/2 - 0.05, dropCeilingHeight + wallHeight/2, 0);
+    scene.add(vWallLeft);
+
+    const vWallRight = new THREE.Mesh(vWallLR, cleanCeilingMaterial);
+    vWallRight.position.set(innerWidth/2 + 0.05, dropCeilingHeight + wallHeight/2, 0);
+    scene.add(vWallRight);
+
+    // --- 5. THE "SQUARE LAMP" (LED Strip Geometry) - Group 1 ---
+    const stripGroup = new THREE.Group();
+    const stripGeoTB = new THREE.BoxGeometry(innerWidth, stripThickness, stripThickness);
+    const stripGeoLR = new THREE.BoxGeometry(stripThickness, stripThickness, innerLength - stripThickness*2);
+
+    const stripFront = new THREE.Mesh(stripGeoTB, ledStripMaterial);
+    stripFront.position.set(0, 0, -innerLength/2 + stripThickness/2);
+    stripGroup.add(stripFront);
+
+    const stripBack = new THREE.Mesh(stripGeoTB, ledStripMaterial);
+    stripBack.position.set(0, 0, innerLength/2 - stripThickness/2);
+    stripGroup.add(stripBack);
+
+    const stripLeft = new THREE.Mesh(stripGeoLR, ledStripMaterial);
+    stripLeft.position.set(-innerWidth/2 + stripThickness/2, 0, 0);
+    stripGroup.add(stripLeft);
+
+    const stripRight = new THREE.Mesh(stripGeoLR, ledStripMaterial);
+    stripRight.position.set(innerWidth/2 - stripThickness/2, 0, 0);
+    stripGroup.add(stripRight);
+
+    stripGroup.position.y = dropCeilingHeight + 0.2;
+    scene.add(stripGroup);
+
+    // Add strip meshes to 'coveLights' array
+    stripGroup.children.forEach(mesh => coveLights.push({ type: 'mesh', obj: mesh }));
+
+    // --- 6. HIDDEN COVE LIGHTS (PointLights) - Group 1 ---
+    function createCoveLight(x, z) {
+        // Pure White Light
+        const light = new THREE.PointLight(0xEBD8B5, 0.5, 14, 1.2); 
+        light.position.set(x, dropCeilingHeight + 0.5, z);
+        scene.add(light);
+        coveLights.push({ type: 'light', obj: light });
+    }
+
+    const spacing = 5.0;
+    // Long sides
+    const numZ = Math.floor(innerLength / spacing);
+    for(let i=0; i <= numZ; i++) {
+        const z = -innerLength/2 + (innerLength/numZ) * i;
+        createCoveLight(-innerWidth/2 + 0.5, z);
+        createCoveLight(innerWidth/2 - 0.5, z);
+    }
+    // Short sides
+    const numX = Math.floor(innerWidth / spacing);
+    for(let i=1; i < numX; i++) { 
+        const x = -innerWidth/2 + (innerWidth/numX) * i;
+        createCoveLight(x, -innerLength/2 + 0.5);
+        createCoveLight(x, innerLength/2 - 0.5);
+    }
+
+// --- 7. THE 4 RECESSED BULBS (SOFTER & REALISTIC) ---
+    
+    // 1. Create the Glow Texture
+    const glowTexture = createLightGlowTexture();
+    const glowMaterial = new THREE.SpriteMaterial({ 
+        map: glowTexture, 
+        color: 0xEBD8B5,      
+        transparent: true, 
+        opacity: 0.4,         // Lower opacity for a softer look
+        blending: THREE.AdditiveBlending 
+    });
+
+    // 2. Bulb Material 
+    const realisticBulbOnMat = new THREE.MeshStandardMaterial({
+        color: 0xEBD8B5,         
+        emissive: 0xEBD8B5,      
+        emissiveIntensity: 0.5,  // Reduced so the bulb itself isn't blinding
+        roughness: 0.1
+    });
+
+    // Calculate positions 
+    const bulbOffsetX = innerWidth / 2 - 3.5; 
+    const bulbOffsetZ = innerLength / 2 - 3.5;
+
+    const bulbPositions = [
+        { x: -bulbOffsetX, z: -bulbOffsetZ },
+        { x: bulbOffsetX,  z: -bulbOffsetZ },
+        { x: -bulbOffsetX, z: bulbOffsetZ },
+        { x: bulbOffsetX,  z: bulbOffsetZ }
+    ];
+
+    bulbPositions.forEach(pos => {
+        // A. Housing
+        const housingGeo = new THREE.CylinderGeometry(0.28, 0.28, 0.05, 24);
+        const housingMat = new THREE.MeshStandardMaterial({ color: 0x333333, roughness: 0.5 });
+        const housing = new THREE.Mesh(housingGeo, housingMat);
+        housing.position.set(pos.x, recessedHeight - 0.025, pos.z);
+        scene.add(housing);
+
+        // B. Bulb Lens
+        const bulbGeo = new THREE.SphereGeometry(0.18, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
+        const bulb = new THREE.Mesh(bulbGeo, realisticBulbOnMat);
+        bulb.rotation.x = Math.PI; 
+        bulb.position.set(pos.x, recessedHeight - 0.05, pos.z);
+        scene.add(bulb);
+
+        // C. Glare Sprite
+        const glowSprite = new THREE.Sprite(glowMaterial);
+        glowSprite.scale.set(2.0, 2.0, 1.0); 
+        glowSprite.position.set(pos.x, recessedHeight - 0.35, pos.z); 
+        scene.add(glowSprite);
+
+        // D. The Actual Light (UPDATED SETTINGS)
+        // Intensity 0.5 is much softer.
+        const spot = new THREE.SpotLight(0xEBD8B5, 0.35); 
+        spot.position.set(pos.x, recessedHeight - 0.1, pos.z);
+        spot.target.position.set(pos.x, 0, pos.z);
+        
+        // Wider angle (PI/2.5) spreads light more, reducing the "hot spot" on floor
+        spot.angle = Math.PI / 2.5; 
+        spot.penumbra = 0.6;    
+        // 2. ADD THESE LINES TO FIX THE "WHITE FLOOR" 
+        spot.decay = 1.0;    // Makes light fade as it travels (physics)
+        spot.distance = 15;  // The light stops affecting things after 15 meters    
+        spot.castShadow = true;
+        spot.shadow.bias = -0.0001;
+        
+        scene.add(spot);
+        scene.add(spot.target);
+
+        downLights.push({ type: 'mesh', obj: bulb });     
+        downLights.push({ type: 'sprite', obj: glowSprite }); 
+        downLights.push({ type: 'light', obj: spot });    
+    });
     // --- 2. LOAD THE AC MODEL (New!) ---
     // Make sure you deleted the old "acGroup" code block to avoid duplicates!
 
@@ -1213,6 +1243,31 @@ function init() {
         scene.add(station);
     }
 
+
+        // Helper to create a soft glow texture programmatically
+// Helper to create a soft glow texture programmatically
+// Helper to create a soft glow texture programmatically
+    function createLightGlowTexture() {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64; canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
+        
+        // CENTER: Warm Peach (No longer pure white)
+        gradient.addColorStop(0, 'rgba(255, 220, 180, 1)'); 
+        
+        // MIDDLE: Deep Warm Beige
+        gradient.addColorStop(0.4, 'rgba(255, 200, 130, 0.4)'); 
+        
+        // EDGE: Fade out
+        gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 64, 64);
+        
+        const texture = new THREE.CanvasTexture(canvas);
+        return texture;
+    }
 
     function createDesk(width, depth, height, options = {}) {
         const powerChannel = options.powerChannel === true;
@@ -1871,16 +1926,26 @@ function toggleLights() {
     lightsOn = !lightsOn;
     toggleableLights.forEach(item => {
         if (item.bulb) {
-            // Toggle bulb emissive
-            if (lightsOn) {
-                item.bulb.material.emissive.setHex(item.originalEmissive);
-                item.bulb.material.emissiveIntensity = item.originalIntensity;
+            // Handle Mesh Objects
+            if (item.bulb.userData.isLedStrip) {
+                // Special handling for the LED Strip (Basic Material)
+                if (lightsOn) {
+                    item.bulb.material.color.setHex(item.bulb.userData.onColor);
+                } else {
+                    item.bulb.material.color.setHex(0x111111); // Dark grey when off
+                }
             } else {
-                item.bulb.material.emissive.setHex(0x000000);
-                item.bulb.material.emissiveIntensity = 0;
+                // Standard Bulbs (Emissive Material)
+                if (lightsOn) {
+                    item.bulb.material.emissive.setHex(item.originalEmissive);
+                    item.bulb.material.emissiveIntensity = item.originalIntensity;
+                } else {
+                    item.bulb.material.emissive.setHex(0x000000);
+                    item.bulb.material.emissiveIntensity = 0;
+                }
             }
         } else {
-            // Regular light toggle
+            // Regular Light Objects (PointLight, etc)
             item.visible = lightsOn;
         }
     });
@@ -1979,4 +2044,42 @@ function animate() {
     prevTime = time;
     stats.update();
     renderer.render(scene, camera);
+}
+
+function toggleCoveLights() {
+    coveActive = !coveActive;
+    coveLights.forEach(item => {
+        if (item.type === 'mesh') {
+            // Toggle visual strip (White vs Dark Grey)
+            if (coveActive) item.obj.material.color.setHex(0xEBD8B5);
+            else item.obj.material.color.setHex(0x111111);
+        } else if (item.type === 'light') {
+            // Toggle actual light
+            item.obj.visible = coveActive;
+        }
+    });
+}
+
+function toggleDownLights() {
+    downLightsActive = !downLightsActive;
+    
+    downLights.forEach(item => {
+        if (item.type === 'mesh') {
+            // Toggle bulb physical material
+            if (downLightsActive) {
+                item.obj.material.emissive.setHex(0xEBD8B5); // CHANGED: New Color
+                item.obj.material.emissiveIntensity = 0.5;   // CHANGED: New Intensity
+            } else {
+                item.obj.material.emissive.setHex(0x000000);
+                item.obj.material.emissiveIntensity = 0;
+            }
+        } 
+        else if (item.type === 'sprite') {
+            item.obj.visible = downLightsActive;
+        } 
+        else if (item.type === 'light') {
+            item.obj.visible = downLightsActive;
+            item.obj.castShadow = downLightsActive;
+        }
+    });
 }

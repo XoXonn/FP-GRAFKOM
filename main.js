@@ -686,27 +686,34 @@ function init() {
     const bandGap = 2.0; // Increased spacing (lowers the bottom position)
     const extrusionDepth = 0.28;
 
-    // Updated Paths: Two separate paths for different patterns
     const topBandPath = [
-        { z: -roomLength / 2, y: centerLineY + bandThickness },
-        { z: -roomLength / 2 + 10, y: centerLineY + bandThickness },
-        { z: -roomLength / 2 + 13, y: centerLineY + bandThickness - 1.7 },
-        { z: roomLength / 2 - 5, y: centerLineY + bandThickness - 1.5 },
-        { z: roomLength / 2, y: centerLineY + bandThickness - 0.7 }
+        { z: -roomLength / 2, y: centerLineY + bandThickness + 0.5 },         // 1. Start (High 1)
+        { z: -roomLength / 2 + (roomLength * 3 / 8), y: centerLineY + bandThickness + 0.5 }, // 2. Flat until 3/8
+        { z: -roomLength / 2 + (roomLength * 3 / 8) + 6, y: centerLineY + bandThickness - 2 }, // 3. Slope down (Longer slope)
+        { z: roomLength / 2 - (roomLength * 1 / 8) - 6, y: centerLineY + bandThickness - 2 },  // 4. Flat bottom (Shorter flat)
+        { z: roomLength / 2 - (roomLength * 1 / 8), y: centerLineY + bandThickness + 1.0 },      // 5. Slope up (Higher)
+        { z: roomLength / 2, y: centerLineY + bandThickness + 1.0 }           // 6. End (High 2)
     ];
 
-    // New Bottom Path (Currently inverted/offsets, but can be customized freely)
+    // New Bottom Path (Custom 4-point shape)
+    const topFirstSegmentLength = (roomLength * 3 / 8);
+    const bottomP2Z = -roomLength / 2 + (topFirstSegmentLength * 0.75); // 3/4 length of point 1-2 in topband
+
     const bottomBandPath = [
-        { z: -roomLength / 2, y: centerLineY - bandGap },
-        { z: -roomLength / 2 + 10, y: centerLineY - bandGap },
-        { z: -roomLength / 2 + 13, y: centerLineY - bandGap - 1.7 },
-        { z: roomLength / 2 - 5, y: centerLineY - bandGap - 1.5 },
-        { z: roomLength / 2, y: centerLineY - bandGap - 0.7 }
+        { z: -roomLength / 2, y: centerLineY - 0.8 },              // 1. Slightly lower than top band start (approx 2.5)
+        { z: bottomP2Z, y: centerLineY - 0.8 },                    // 2. Flat until calculated point
+        { z: bottomP2Z + 6, y: centerLineY - bandGap - 1.2 },      // 3. Slope down to low point (approx -1.2)
+        { z: roomLength / 2, y: centerLineY - bandGap - 1.2 }      // 4. Straight to end
     ];
 
     const extrudeSettings = { steps: 1, depth: extrusionDepth, bevelEnabled: false };
 
-    // --- LEFT WALL TOP ---
+    // --- CREATE INVERTED PATHS (Reserved for future use) ---
+    // We negate Z to flip the pattern vertically/horizontally relative to wall start
+    const topBandPathRight = topBandPath.map(p => ({ z: -p.z, y: p.y }));
+    const bottomBandPathRight = bottomBandPath.map(p => ({ z: -p.z, y: p.y }));
+
+    // --- LEFT WALL TOP (Uses ORIGINAL Path) ---
     const accentTopGeo = new THREE.Shape();
     accentTopGeo.moveTo(topBandPath[0].z, topBandPath[0].y);
     for (let i = 1; i < topBandPath.length; i++) { accentTopGeo.lineTo(topBandPath[i].z, topBandPath[i].y); }
@@ -718,14 +725,11 @@ function init() {
     accentTopMesh.position.set(0.11, 0, 0);
     wallLeftGroup.add(accentTopMesh);
 
-    // --- LEFT WALL BOTTOM (Uses bottomBandPath) ---
+    // --- LEFT WALL BOTTOM (Uses ORIGINAL Path) ---
     const accentBottomGeo = new THREE.Shape();
     accentBottomGeo.moveTo(bottomBandPath[0].z, bottomBandPath[0].y);
     for (let i = 1; i < bottomBandPath.length; i++) { accentBottomGeo.lineTo(bottomBandPath[i].z, bottomBandPath[i].y); }
-    // Close shape by going UP (thickness) then back to start. Note: bottom path is the BOTTOM edge of the band? 
-    // Actually, usually we define the bottom-left corner of the strip. 
-    // Let's assume bottomBandPath defines the LOWER edge.
-    // So we add thickness to Y for the upper edge.
+    // Close shape by going UP (thickness) then back to start
     for (let i = bottomBandPath.length - 1; i >= 0; i--) { accentBottomGeo.lineTo(bottomBandPath[i].z, bottomBandPath[i].y + bandThickness); }
     accentBottomGeo.lineTo(bottomBandPath[0].z, bottomBandPath[0].y + bandThickness);
 
@@ -744,7 +748,7 @@ function init() {
     wallRightBase.receiveShadow = true;
     wallRightGroup.add(wallRightBase);
 
-    // --- RIGHT WALL TOP (Uses topBandPath) ---
+    // --- RIGHT WALL TOP (Now uses ORIGINAL/Left Path) ---
     const accentTopGeoRight = new THREE.Shape();
     accentTopGeoRight.moveTo(topBandPath[0].z, topBandPath[0].y);
     for (let i = 1; i < topBandPath.length; i++) { accentTopGeoRight.lineTo(topBandPath[i].z, topBandPath[i].y); }
@@ -755,7 +759,7 @@ function init() {
     accentTopMeshRight.position.set(0.11, 0, 0);
     wallRightGroup.add(accentTopMeshRight);
 
-    // --- RIGHT WALL BOTTOM (Uses bottomBandPath) ---
+    // --- RIGHT WALL BOTTOM (Now uses ORIGINAL/Left Path) ---
     const accentBottomGeoRight = new THREE.Shape();
     accentBottomGeoRight.moveTo(bottomBandPath[0].z, bottomBandPath[0].y);
     for (let i = 1; i < bottomBandPath.length; i++) { accentBottomGeoRight.lineTo(bottomBandPath[i].z, bottomBandPath[i].y); }
@@ -1054,9 +1058,9 @@ function init() {
         roughness: 0.6,
         metalness: 0.1
     });
-    const seLogoPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.7), seLogoMaterial);
+    const seLogoPlane = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 2.55), seLogoMaterial);
     seLogoPlane.rotation.y = -Math.PI / 2;
-    seLogoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.75, 0);
+    seLogoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.80, 5.0);
     scene.add(seLogoPlane);
 
     // --- END: Pasted geometry code ---

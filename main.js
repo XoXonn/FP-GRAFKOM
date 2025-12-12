@@ -85,7 +85,7 @@ function init() {
     scene.add(controls.getObject());
 
     // --- Key Listeners for Movement and Lights ---
-const onKeyDown = function (event) {
+    const onKeyDown = function (event) {
         switch (event.code) {
             case 'KeyW':
             case 'ArrowUp':
@@ -683,40 +683,58 @@ const onKeyDown = function (event) {
 
     const centerLineY = 2.0; // Ditingkatkan dari 0.5 ke 1.0
     const bandThickness = 0.7;
-    const bandGap = 1.0;
+    const bandGap = 2.0; // Increased spacing (lowers the bottom position)
     const extrusionDepth = 0.28;
 
-    // Path baru ini menggunakan 'centerLineY' (bukan baseY lagi)
+    // Updated Paths: Two separate paths for different patterns
     const topBandPath = [
-        { z: -roomLength / 2, y: centerLineY + bandThickness },       // Awal datar
-        { z: -roomLength / 2 + 10, y: centerLineY + bandThickness },       // Masih datar
-        //{ z: -roomLength / 2 + 8,  y: centerLineY + bandThickness - 1.2 }, // Mulai turun lebih curam (ditingkatkan dari -0.8 ke -1.2)
-        { z: -roomLength / 2 + 13, y: centerLineY + bandThickness - 1.7 }, // Titik terendah yang lebih curam (ditingkatkan dari -1.2 ke -1.8)
-        //{ z: roomLength / 2 - 10,   y: centerLineY + bandThickness - 1.6 }, // Mulai naik lagi, tapi dari posisi lebih rendah (ditingkatkan dari -1.0 ke -1.6)
-        { z: roomLength / 2 - 5, y: centerLineY + bandThickness - 1.5 }, // Naik lebih tinggi (ditingkatkan dari -0.2 ke -0.7)
-        { z: roomLength / 2, y: centerLineY + bandThickness - 0.7 }  // Akhir datar (ditingkatkan dari -0.2 ke -0.7)
+        { z: -roomLength / 2, y: centerLineY + bandThickness },
+        { z: -roomLength / 2 + 10, y: centerLineY + bandThickness },
+        { z: -roomLength / 2 + 13, y: centerLineY + bandThickness - 1.7 },
+        { z: roomLength / 2 - 5, y: centerLineY + bandThickness - 1.5 },
+        { z: roomLength / 2, y: centerLineY + bandThickness - 0.7 }
+    ];
+
+    // New Bottom Path (Currently inverted/offsets, but can be customized freely)
+    const bottomBandPath = [
+        { z: -roomLength / 2, y: centerLineY - bandGap },
+        { z: -roomLength / 2 + 10, y: centerLineY - bandGap },
+        { z: -roomLength / 2 + 13, y: centerLineY - bandGap - 1.7 },
+        { z: roomLength / 2 - 5, y: centerLineY - bandGap - 1.5 },
+        { z: roomLength / 2, y: centerLineY - bandGap - 0.7 }
     ];
 
     const extrudeSettings = { steps: 1, depth: extrusionDepth, bevelEnabled: false };
 
+    // --- LEFT WALL TOP ---
     const accentTopGeo = new THREE.Shape();
     accentTopGeo.moveTo(topBandPath[0].z, topBandPath[0].y);
     for (let i = 1; i < topBandPath.length; i++) { accentTopGeo.lineTo(topBandPath[i].z, topBandPath[i].y); }
+    // Close shape by going UP (thickness) then back to start
     for (let i = topBandPath.length - 1; i >= 0; i--) { accentTopGeo.lineTo(topBandPath[i].z, topBandPath[i].y + bandThickness); }
     accentTopGeo.lineTo(topBandPath[0].z, topBandPath[0].y + bandThickness);
+
     const accentTopMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(accentTopGeo, extrudeSettings), accentMaterial);
     accentTopMesh.position.set(0.11, 0, 0);
     wallLeftGroup.add(accentTopMesh);
 
+    // --- LEFT WALL BOTTOM (Uses bottomBandPath) ---
     const accentBottomGeo = new THREE.Shape();
-    accentBottomGeo.moveTo(topBandPath[0].z, topBandPath[0].y - bandGap - bandThickness);
-    for (let i = 1; i < topBandPath.length; i++) { accentBottomGeo.lineTo(topBandPath[i].z, topBandPath[i].y - bandGap - bandThickness); }
-    for (let i = topBandPath.length - 1; i >= 0; i--) { accentBottomGeo.lineTo(topBandPath[i].z, topBandPath[i].y - bandGap); }
-    accentBottomGeo.lineTo(topBandPath[0].z, topBandPath[0].y - bandGap);
+    accentBottomGeo.moveTo(bottomBandPath[0].z, bottomBandPath[0].y);
+    for (let i = 1; i < bottomBandPath.length; i++) { accentBottomGeo.lineTo(bottomBandPath[i].z, bottomBandPath[i].y); }
+    // Close shape by going UP (thickness) then back to start. Note: bottom path is the BOTTOM edge of the band? 
+    // Actually, usually we define the bottom-left corner of the strip. 
+    // Let's assume bottomBandPath defines the LOWER edge.
+    // So we add thickness to Y for the upper edge.
+    for (let i = bottomBandPath.length - 1; i >= 0; i--) { accentBottomGeo.lineTo(bottomBandPath[i].z, bottomBandPath[i].y + bandThickness); }
+    accentBottomGeo.lineTo(bottomBandPath[0].z, bottomBandPath[0].y + bandThickness);
+
     const accentBottomMesh = new THREE.Mesh(new THREE.ExtrudeGeometry(accentBottomGeo, extrudeSettings), accentMaterial);
     accentBottomMesh.position.set(0.11, 0, 0);
     wallLeftGroup.add(accentBottomMesh);
+
     scene.add(wallLeftGroup);
+
 
     // Right Wall (Mirrored)
     const wallRightGroup = new THREE.Group();
@@ -726,24 +744,28 @@ const onKeyDown = function (event) {
     wallRightBase.receiveShadow = true;
     wallRightGroup.add(wallRightBase);
 
-    // (Using same path data as left wall)
+    // --- RIGHT WALL TOP (Uses topBandPath) ---
     const accentTopGeoRight = new THREE.Shape();
     accentTopGeoRight.moveTo(topBandPath[0].z, topBandPath[0].y);
     for (let i = 1; i < topBandPath.length; i++) { accentTopGeoRight.lineTo(topBandPath[i].z, topBandPath[i].y); }
     for (let i = topBandPath.length - 1; i >= 0; i--) { accentTopGeoRight.lineTo(topBandPath[i].z, topBandPath[i].y + bandThickness); }
     accentTopGeoRight.lineTo(topBandPath[0].z, topBandPath[0].y + bandThickness);
+
     const accentTopMeshRight = new THREE.Mesh(new THREE.ExtrudeGeometry(accentTopGeoRight, extrudeSettings), accentMaterial);
     accentTopMeshRight.position.set(0.11, 0, 0);
     wallRightGroup.add(accentTopMeshRight);
 
+    // --- RIGHT WALL BOTTOM (Uses bottomBandPath) ---
     const accentBottomGeoRight = new THREE.Shape();
-    accentBottomGeoRight.moveTo(topBandPath[0].z, topBandPath[0].y - bandGap - bandThickness);
-    for (let i = 1; i < topBandPath.length; i++) { accentBottomGeoRight.lineTo(topBandPath[i].z, topBandPath[i].y - bandGap - bandThickness); }
-    for (let i = topBandPath.length - 1; i >= 0; i--) { accentBottomGeoRight.lineTo(topBandPath[i].z, topBandPath[i].y - bandGap); }
-    accentBottomGeoRight.lineTo(topBandPath[0].z, topBandPath[0].y - bandGap);
+    accentBottomGeoRight.moveTo(bottomBandPath[0].z, bottomBandPath[0].y);
+    for (let i = 1; i < bottomBandPath.length; i++) { accentBottomGeoRight.lineTo(bottomBandPath[i].z, bottomBandPath[i].y); }
+    for (let i = bottomBandPath.length - 1; i >= 0; i--) { accentBottomGeoRight.lineTo(bottomBandPath[i].z, bottomBandPath[i].y + bandThickness); }
+    accentBottomGeoRight.lineTo(bottomBandPath[0].z, bottomBandPath[0].y + bandThickness);
+
     const accentBottomMeshRight = new THREE.Mesh(new THREE.ExtrudeGeometry(accentBottomGeoRight, extrudeSettings), accentMaterial);
     accentBottomMeshRight.position.set(0.11, 0, 0);
     wallRightGroup.add(accentBottomMeshRight);
+
     scene.add(wallRightGroup);
 
     // ... (Add TV, Ceiling, Clock, AC, Logo objects here) ...
@@ -774,7 +796,7 @@ const onKeyDown = function (event) {
     tvGroup.position.set(0, 0, -8);
     scene.add(tvGroup);
 
-// ==========================================
+    // ==========================================
     // --- NEW: COVE CEILING (Matches Pic 1) ---
     // ==========================================
 
@@ -784,7 +806,7 @@ const onKeyDown = function (event) {
     const coveWidth = 5.0;                      // How wide the border is
     const stripThickness = 0.15;                // Thickness of the glowing light strip
 
-// --- 1. Materials (ALL WHITE) ---
+    // --- 1. Materials (ALL WHITE) ---
     const cleanCeilingMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
         roughness: 0.8,
@@ -802,28 +824,28 @@ const onKeyDown = function (event) {
         emissive: 0xEBD8B5,
         emissiveIntensity: 1.0
     });
-    
+
     // --- 2. Build the Drop Ceiling (Lower Border) ---
     const sidePlankGeo = new THREE.BoxGeometry(coveWidth, 0.4, roomLength);
     const ceilingLeft = new THREE.Mesh(sidePlankGeo, cleanCeilingMaterial);
-    ceilingLeft.position.set(-roomWidth/2 + coveWidth/2, dropCeilingHeight, 0);
+    ceilingLeft.position.set(-roomWidth / 2 + coveWidth / 2, dropCeilingHeight, 0);
     ceilingLeft.receiveShadow = true;
     scene.add(ceilingLeft);
 
     const ceilingRight = new THREE.Mesh(sidePlankGeo, cleanCeilingMaterial);
-    ceilingRight.position.set(roomWidth/2 - coveWidth/2, dropCeilingHeight, 0);
+    ceilingRight.position.set(roomWidth / 2 - coveWidth / 2, dropCeilingHeight, 0);
     ceilingRight.receiveShadow = true;
     scene.add(ceilingRight);
 
     const fbPlankWidth = roomWidth - (coveWidth * 2);
     const fbPlankGeo = new THREE.BoxGeometry(fbPlankWidth, 0.4, coveWidth);
     const ceilingFront = new THREE.Mesh(fbPlankGeo, cleanCeilingMaterial);
-    ceilingFront.position.set(0, dropCeilingHeight, -roomLength/2 + coveWidth/2);
+    ceilingFront.position.set(0, dropCeilingHeight, -roomLength / 2 + coveWidth / 2);
     ceilingFront.receiveShadow = true;
     scene.add(ceilingFront);
 
     const ceilingBack = new THREE.Mesh(fbPlankGeo, cleanCeilingMaterial);
-    ceilingBack.position.set(0, dropCeilingHeight, roomLength/2 - coveWidth/2);
+    ceilingBack.position.set(0, dropCeilingHeight, roomLength / 2 - coveWidth / 2);
     ceilingBack.receiveShadow = true;
     scene.add(ceilingBack);
 
@@ -847,40 +869,40 @@ const onKeyDown = function (event) {
     const vWallLR = new THREE.BoxGeometry(0.1, wallHeight, innerLength + 0.2);
 
     const vWallFront = new THREE.Mesh(vWallFB, cleanCeilingMaterial);
-    vWallFront.position.set(0, dropCeilingHeight + wallHeight/2, -innerLength/2 - 0.05);
+    vWallFront.position.set(0, dropCeilingHeight + wallHeight / 2, -innerLength / 2 - 0.05);
     scene.add(vWallFront);
 
     const vWallBack = new THREE.Mesh(vWallFB, cleanCeilingMaterial);
-    vWallBack.position.set(0, dropCeilingHeight + wallHeight/2, innerLength/2 + 0.05);
+    vWallBack.position.set(0, dropCeilingHeight + wallHeight / 2, innerLength / 2 + 0.05);
     scene.add(vWallBack);
 
     const vWallLeft = new THREE.Mesh(vWallLR, cleanCeilingMaterial);
-    vWallLeft.position.set(-innerWidth/2 - 0.05, dropCeilingHeight + wallHeight/2, 0);
+    vWallLeft.position.set(-innerWidth / 2 - 0.05, dropCeilingHeight + wallHeight / 2, 0);
     scene.add(vWallLeft);
 
     const vWallRight = new THREE.Mesh(vWallLR, cleanCeilingMaterial);
-    vWallRight.position.set(innerWidth/2 + 0.05, dropCeilingHeight + wallHeight/2, 0);
+    vWallRight.position.set(innerWidth / 2 + 0.05, dropCeilingHeight + wallHeight / 2, 0);
     scene.add(vWallRight);
 
     // --- 5. THE "SQUARE LAMP" (LED Strip Geometry) - Group 1 ---
     const stripGroup = new THREE.Group();
     const stripGeoTB = new THREE.BoxGeometry(innerWidth, stripThickness, stripThickness);
-    const stripGeoLR = new THREE.BoxGeometry(stripThickness, stripThickness, innerLength - stripThickness*2);
+    const stripGeoLR = new THREE.BoxGeometry(stripThickness, stripThickness, innerLength - stripThickness * 2);
 
     const stripFront = new THREE.Mesh(stripGeoTB, ledStripMaterial);
-    stripFront.position.set(0, 0, -innerLength/2 + stripThickness/2);
+    stripFront.position.set(0, 0, -innerLength / 2 + stripThickness / 2);
     stripGroup.add(stripFront);
 
     const stripBack = new THREE.Mesh(stripGeoTB, ledStripMaterial);
-    stripBack.position.set(0, 0, innerLength/2 - stripThickness/2);
+    stripBack.position.set(0, 0, innerLength / 2 - stripThickness / 2);
     stripGroup.add(stripBack);
 
     const stripLeft = new THREE.Mesh(stripGeoLR, ledStripMaterial);
-    stripLeft.position.set(-innerWidth/2 + stripThickness/2, 0, 0);
+    stripLeft.position.set(-innerWidth / 2 + stripThickness / 2, 0, 0);
     stripGroup.add(stripLeft);
 
     const stripRight = new THREE.Mesh(stripGeoLR, ledStripMaterial);
-    stripRight.position.set(innerWidth/2 - stripThickness/2, 0, 0);
+    stripRight.position.set(innerWidth / 2 - stripThickness / 2, 0, 0);
     stripGroup.add(stripRight);
 
     stripGroup.position.y = dropCeilingHeight + 0.2;
@@ -892,7 +914,7 @@ const onKeyDown = function (event) {
     // --- 6. HIDDEN COVE LIGHTS (PointLights) - Group 1 ---
     function createCoveLight(x, z) {
         // Pure White Light
-        const light = new THREE.PointLight(0xEBD8B5, 0.5, 14, 1.2); 
+        const light = new THREE.PointLight(0xEBD8B5, 0.5, 14, 1.2);
         light.position.set(x, dropCeilingHeight + 0.5, z);
         scene.add(light);
         coveLights.push({ type: 'light', obj: light });
@@ -901,48 +923,48 @@ const onKeyDown = function (event) {
     const spacing = 5.0;
     // Long sides
     const numZ = Math.floor(innerLength / spacing);
-    for(let i=0; i <= numZ; i++) {
-        const z = -innerLength/2 + (innerLength/numZ) * i;
-        createCoveLight(-innerWidth/2 + 0.5, z);
-        createCoveLight(innerWidth/2 - 0.5, z);
+    for (let i = 0; i <= numZ; i++) {
+        const z = -innerLength / 2 + (innerLength / numZ) * i;
+        createCoveLight(-innerWidth / 2 + 0.5, z);
+        createCoveLight(innerWidth / 2 - 0.5, z);
     }
     // Short sides
     const numX = Math.floor(innerWidth / spacing);
-    for(let i=1; i < numX; i++) { 
-        const x = -innerWidth/2 + (innerWidth/numX) * i;
-        createCoveLight(x, -innerLength/2 + 0.5);
-        createCoveLight(x, innerLength/2 - 0.5);
+    for (let i = 1; i < numX; i++) {
+        const x = -innerWidth / 2 + (innerWidth / numX) * i;
+        createCoveLight(x, -innerLength / 2 + 0.5);
+        createCoveLight(x, innerLength / 2 - 0.5);
     }
 
-// --- 7. THE 4 RECESSED BULBS (SOFTER & REALISTIC) ---
-    
+    // --- 7. THE 4 RECESSED BULBS (SOFTER & REALISTIC) ---
+
     // 1. Create the Glow Texture
     const glowTexture = createLightGlowTexture();
-    const glowMaterial = new THREE.SpriteMaterial({ 
-        map: glowTexture, 
-        color: 0xEBD8B5,      
-        transparent: true, 
+    const glowMaterial = new THREE.SpriteMaterial({
+        map: glowTexture,
+        color: 0xEBD8B5,
+        transparent: true,
         opacity: 0.4,         // Lower opacity for a softer look
-        blending: THREE.AdditiveBlending 
+        blending: THREE.AdditiveBlending
     });
 
     // 2. Bulb Material 
     const realisticBulbOnMat = new THREE.MeshStandardMaterial({
-        color: 0xEBD8B5,         
-        emissive: 0xEBD8B5,      
+        color: 0xEBD8B5,
+        emissive: 0xEBD8B5,
         emissiveIntensity: 0.5,  // Reduced so the bulb itself isn't blinding
         roughness: 0.1
     });
 
     // Calculate positions 
-    const bulbOffsetX = innerWidth / 2 - 3.5; 
+    const bulbOffsetX = innerWidth / 2 - 3.5;
     const bulbOffsetZ = innerLength / 2 - 3.5;
 
     const bulbPositions = [
         { x: -bulbOffsetX, z: -bulbOffsetZ },
-        { x: bulbOffsetX,  z: -bulbOffsetZ },
+        { x: bulbOffsetX, z: -bulbOffsetZ },
         { x: -bulbOffsetX, z: bulbOffsetZ },
-        { x: bulbOffsetX,  z: bulbOffsetZ }
+        { x: bulbOffsetX, z: bulbOffsetZ }
     ];
 
     bulbPositions.forEach(pos => {
@@ -956,37 +978,37 @@ const onKeyDown = function (event) {
         // B. Bulb Lens
         const bulbGeo = new THREE.SphereGeometry(0.18, 16, 16, 0, Math.PI * 2, 0, Math.PI * 0.5);
         const bulb = new THREE.Mesh(bulbGeo, realisticBulbOnMat);
-        bulb.rotation.x = Math.PI; 
+        bulb.rotation.x = Math.PI;
         bulb.position.set(pos.x, recessedHeight - 0.05, pos.z);
         scene.add(bulb);
 
         // C. Glare Sprite
         const glowSprite = new THREE.Sprite(glowMaterial);
-        glowSprite.scale.set(2.0, 2.0, 1.0); 
-        glowSprite.position.set(pos.x, recessedHeight - 0.35, pos.z); 
+        glowSprite.scale.set(2.0, 2.0, 1.0);
+        glowSprite.position.set(pos.x, recessedHeight - 0.35, pos.z);
         scene.add(glowSprite);
 
         // D. The Actual Light (UPDATED SETTINGS)
         // Intensity 0.5 is much softer.
-        const spot = new THREE.SpotLight(0xEBD8B5, 0.35); 
+        const spot = new THREE.SpotLight(0xEBD8B5, 0.35);
         spot.position.set(pos.x, recessedHeight - 0.1, pos.z);
         spot.target.position.set(pos.x, 0, pos.z);
-        
+
         // Wider angle (PI/2.5) spreads light more, reducing the "hot spot" on floor
-        spot.angle = Math.PI / 2.5; 
-        spot.penumbra = 0.6;    
+        spot.angle = Math.PI / 2.5;
+        spot.penumbra = 0.6;
         // 2. ADD THESE LINES TO FIX THE "WHITE FLOOR" 
         spot.decay = 1.0;    // Makes light fade as it travels (physics)
         spot.distance = 15;  // The light stops affecting things after 15 meters    
         spot.castShadow = true;
         spot.shadow.bias = -0.0001;
-        
+
         scene.add(spot);
         scene.add(spot.target);
 
-        downLights.push({ type: 'mesh', obj: bulb });     
-        downLights.push({ type: 'sprite', obj: glowSprite }); 
-        downLights.push({ type: 'light', obj: spot });    
+        downLights.push({ type: 'mesh', obj: bulb });
+        downLights.push({ type: 'sprite', obj: glowSprite });
+        downLights.push({ type: 'light', obj: spot });
     });
     // --- 2. LOAD THE AC MODEL (New!) ---
     // Make sure you deleted the old "acGroup" code block to avoid duplicates!
@@ -1244,27 +1266,27 @@ const onKeyDown = function (event) {
     }
 
 
-        // Helper to create a soft glow texture programmatically
-// Helper to create a soft glow texture programmatically
-// Helper to create a soft glow texture programmatically
+    // Helper to create a soft glow texture programmatically
+    // Helper to create a soft glow texture programmatically
+    // Helper to create a soft glow texture programmatically
     function createLightGlowTexture() {
         const canvas = document.createElement('canvas');
         canvas.width = 64; canvas.height = 64;
         const ctx = canvas.getContext('2d');
         const gradient = ctx.createRadialGradient(32, 32, 0, 32, 32, 32);
-        
+
         // CENTER: Warm Peach (No longer pure white)
-        gradient.addColorStop(0, 'rgba(255, 220, 180, 1)'); 
-        
+        gradient.addColorStop(0, 'rgba(255, 220, 180, 1)');
+
         // MIDDLE: Deep Warm Beige
-        gradient.addColorStop(0.4, 'rgba(255, 200, 130, 0.4)'); 
-        
+        gradient.addColorStop(0.4, 'rgba(255, 200, 130, 0.4)');
+
         // EDGE: Fade out
         gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        
+
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, 64, 64);
-        
+
         const texture = new THREE.CanvasTexture(canvas);
         return texture;
     }
@@ -1522,6 +1544,41 @@ const onKeyDown = function (event) {
         const bookTexture2 = new THREE.TextureLoader().load('img/rakbuku1_2.png');
         const bookMaterial2 = new THREE.MeshStandardMaterial({
             map: bookTexture2,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        const bookTexture3 = new THREE.TextureLoader().load('img/rakbuku2_1.png');
+        const bookMaterial3 = new THREE.MeshStandardMaterial({
+            map: bookTexture3,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        const bookTexture4 = new THREE.TextureLoader().load('img/rakbuku2_2.png');
+        const bookMaterial4 = new THREE.MeshStandardMaterial({
+            map: bookTexture4,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        const bookTexture5 = new THREE.TextureLoader().load('img/rakbuku2_3.png');
+        const bookMaterial5 = new THREE.MeshStandardMaterial({
+            map: bookTexture5,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        const bookTexture6 = new THREE.TextureLoader().load('img/rakbuku2_4.png');
+        const bookMaterial6 = new THREE.MeshStandardMaterial({
+            map: bookTexture6,
+            transparent: true,
+            side: THREE.DoubleSide
+        });
+
+        const bookTexture7 = new THREE.TextureLoader().load('img/rakbuku1_4.png');
+        const bookMaterial7 = new THREE.MeshStandardMaterial({
+            map: bookTexture7,
             transparent: true,
             side: THREE.DoubleSide
         });
@@ -1790,13 +1847,22 @@ const onKeyDown = function (event) {
         const leftSection = createVerticalSection(leftWidth, leftDoors, leftDoors, true, {
             horizontalShelves: 1,
             verticalDividers: 0,
-            books: [{
-                col: 0,
-                material: bookMaterial1,
-                align: 'right',
-                scale: { x: 2, y: 2 },
-                offset: { x: +1.1, y: +0.08, z: 0 }
-            }]
+            books: [
+                {
+                    col: 0,
+                    material: bookMaterial1,
+                    align: 'right',
+                    scale: { x: 2, y: 2 },
+                    offset: { x: +1.1, y: +0.08, z: 0 }
+                },
+                {
+                    col: 0,
+                    material: bookMaterial3,
+                    align: 'right',
+                    scale: { x: 1.5, y: 1.5 },
+                    offset: { x: +0.7, y: -2, z: 0 }
+                },
+            ]
         });
         leftSection.position.x = currentX + leftWidth / 2;
         group.add(leftSection);
@@ -1818,7 +1884,22 @@ const onKeyDown = function (event) {
                 align: 'center',
                 scale: { x: 1.1, y: 1.1 },
                 offset: { x: +0.1, y: -0.08, z: 0 }
-            }]
+            },
+            {
+                col: 0,
+                material: bookMaterial4,
+                align: 'right',
+                scale: { x: 1.3, y: 1.3 },
+                offset: { x: +0.3, y: -2, z: 0 }
+            },
+            {
+                col: 0,
+                material: bookMaterial5,
+                align: 'right',
+                scale: { x: 1.3, y: 1.3 },
+                offset: { x: +4.35, y: -2, z: 0 }
+            }
+            ]
         });
         middleSection.position.x = currentX + middleWidth / 2;
         group.add(middleSection);
@@ -1831,7 +1912,25 @@ const onKeyDown = function (event) {
         group.add(separator2);
         currentX += separatorWidth / 2;
 
-        const rightSection = createVerticalSection(rightWidth, rightDoors, rightDoors, true, { horizontalShelves: 1, verticalDividers: 0 });
+        const rightSection = createVerticalSection(rightWidth, rightDoors, rightDoors, true, {
+            horizontalShelves: 1,
+            verticalDividers: 0,
+            books: [{
+                col: 0,
+                material: bookMaterial6,
+                align: 'left',
+                scale: { x: 1.3, y: 1.3 },
+                offset: { x: -0.6, y: -2, z: 0 }
+            },
+            {
+                col: 0,
+                material: bookMaterial7,
+                align: 'left',
+                scale: { x: 1.3, y: 1.3 },
+                offset: { x: -0.6, y: -0.23, z: 0 }
+            },
+            ]
+        });
         rightSection.position.x = currentX + rightWidth / 2;
         group.add(rightSection);
         currentX += rightWidth;
@@ -2062,7 +2161,7 @@ function toggleCoveLights() {
 
 function toggleDownLights() {
     downLightsActive = !downLightsActive;
-    
+
     downLights.forEach(item => {
         if (item.type === 'mesh') {
             // Toggle bulb physical material
@@ -2073,10 +2172,10 @@ function toggleDownLights() {
                 item.obj.material.emissive.setHex(0x000000);
                 item.obj.material.emissiveIntensity = 0;
             }
-        } 
+        }
         else if (item.type === 'sprite') {
             item.obj.visible = downLightsActive;
-        } 
+        }
         else if (item.type === 'light') {
             item.obj.visible = downLightsActive;
             item.obj.castShadow = downLightsActive;

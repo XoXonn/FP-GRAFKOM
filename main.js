@@ -157,6 +157,7 @@ function init() {
     directionalLight.shadow.camera.bottom = -25;
     scene.add(directionalLight);
     shadowCastingLights.push(directionalLight);
+    toggleableLights.push(directionalLight);
 
     const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb29a7a, 0.6);
     hemiLight.position.set(0, roomHeight, 0);
@@ -226,7 +227,7 @@ function init() {
         map: plasterColor,
         roughnessMap: plasterRough,
         normalMap: plasterNorm,
-        color: 0xaaaaaa, // Keep it white
+        color: 0xffffff, // Keep it white
         roughness: 0.9   // Walls are usually matte/rough
     });
     const accentMaterial = new THREE.MeshStandardMaterial({
@@ -1213,11 +1214,12 @@ function init() {
         return chairGroup;
     }
 
+// --- REPLACE YOUR createComputerStation FUNCTION WITH THIS ---
     function createComputerStation(x, y, z, rotation) {
         const station = new THREE.Group();
         const deskHeight = y;
 
-        // 1. Monitor Casing
+        // 1. Monitor Screen (Casing)
         const screen = new THREE.Mesh(new THREE.BoxGeometry(1.7, 1.1, 0.08), monitorMaterial);
         screen.position.set(0, deskHeight + 0.75, 0);
         screen.castShadow = true;
@@ -1228,41 +1230,58 @@ function init() {
         display.position.set(0, deskHeight + 0.75, 0.045);
         station.add(display);
 
-        // 3. Stand
-        const stand = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.65, 8), monitorMaterial);
-        stand.position.set(0, deskHeight + 0.33, -0.05);
-        station.add(stand);
+        // --- 3. UPDATED: Circular Stand & Neck ---
+        
+        // A. The Base (Circle)
+        // CylinderGeometry(radiusTop, radiusBottom, height, segments)
+        const baseGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.02, 32); 
+        const base = new THREE.Mesh(baseGeo, monitorMaterial);
+        base.position.set(0, deskHeight + 0.01, 0); // Sits on desk
+        base.castShadow = true;
+        station.add(base);
 
-        // 4. Tower (Gaming PC - Bigger & RGB)
-        // New Size: 0.6 width, 1.6 height, 1.8 depth
+        // B. The Neck (Cylinder connecting base to screen)
+        const neckGeo = new THREE.CylinderGeometry(0.06, 0.06, 0.4, 16);
+        const neck = new THREE.Mesh(neckGeo, monitorMaterial);
+        neck.position.set(0, deskHeight + 0.2, -0.05); // Offset back slightly
+        neck.castShadow = true;
+        station.add(neck);
+        // ------------------------------------------
+
+
+        // 4. Tower (Gaming PC)
         const towerHeight = 1.6;
         const towerGeo = new THREE.BoxGeometry(0.6, towerHeight, 1.8);
         const tower = new THREE.Mesh(towerGeo, towerMaterial);
-
-        // Position: Sits on floor (Y = height/2)
         tower.position.set(1.0, towerHeight / 2, 0);
         tower.castShadow = true;
         station.add(tower);
 
-        // --- RGB STRIP DETAILS ---
-        // A thin vertical glowing line on the front of the case
+        // Tower RGB Strip
         const stripGeo = new THREE.BoxGeometry(0.05, 1.4, 0.02);
         const strip = new THREE.Mesh(stripGeo, rgbMaterial);
-        // Position it on the front face of the tower
-        // (x = relative to tower center, z = front of tower)
         strip.position.set(1.0 + 0.15, towerHeight / 2, 0.91);
         station.add(strip);
 
-        // Optional: Second horizontal strip
-        const strip2 = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.02), rgbMaterial);
-        strip2.position.set(1.0, towerHeight / 2 + 0.5, 0.91);
-        station.add(strip2);
 
-        // 5. Keyboard
-        const keyboard = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.04, 0.45), monitorMaterial);
+        // --- 5. UPDATED: Realistic Keyboard ---
+        
+        // Create material once (if not already created) to save memory
+        if (!window.keyboardMat) {
+            window.keyboardMat = new THREE.MeshStandardMaterial({
+                map: createKeyboardTexture(), // Calls the function from Step 1
+                color: 0xffffff,
+                roughness: 0.5
+            });
+        }
+
+        const keyboardGeo = new THREE.BoxGeometry(1.4, 0.03, 0.45);
+        const keyboard = new THREE.Mesh(keyboardGeo, window.keyboardMat);
         keyboard.position.set(0, deskHeight, 0.7);
-        keyboard.rotation.x = 0.08;
+        keyboard.rotation.x = 0.08; // Slight tilt for ergonomics
+        keyboard.castShadow = true;
         station.add(keyboard);
+        // ------------------------------------------
 
         station.position.set(x, 0, z);
         station.rotation.y = rotation;
@@ -2185,4 +2204,53 @@ function toggleDownLights() {
             item.obj.castShadow = downLightsActive;
         }
     });
+}
+
+// --- ADD THIS AT THE BOTTOM OF MAIN.JS ---
+function createKeyboardTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512; canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    
+    // 1. Background (Dark Plastic)
+    ctx.fillStyle = '#151515'; 
+    ctx.fillRect(0,0, 512, 256);
+
+    // 2. Draw Keys (Lighter Grey blocks)
+    ctx.fillStyle = '#444444';
+    
+    // Settings
+    const keySize = 28; 
+    const gap = 6;
+    const startX = 20; 
+    const startY = 30;
+
+    // A. Main QWERTY Area (Rows of keys)
+    for(let row=0; row<5; row++) {
+        for(let col=0; col<13; col++) {
+             // Randomize key width slightly for realism? No, keep simple grid.
+             ctx.fillRect(startX + col*(keySize+gap), startY + row*(keySize+gap), keySize, keySize);
+        }
+    }
+    // Spacebar
+    ctx.fillRect(startX + 3*(keySize+gap), startY + 5*(keySize+gap), 6*(keySize+gap) - gap, keySize);
+
+    // B. Navigation Keys (Arrows etc)
+    const navX = startX + 13*(keySize+gap) + 20;
+    for(let row=0; row<5; row++) {
+        for(let col=0; col<3; col++) {
+             ctx.fillRect(navX + col*(keySize+gap), startY + row*(keySize+gap), keySize, keySize);
+        }
+    }
+
+    // C. Numpad Area
+    const numX = navX + 3*(keySize+gap) + 20;
+    for(let row=0; row<5; row++) {
+        for(let col=0; col<4; col++) {
+             ctx.fillRect(numX + col*(keySize+gap), startY + row*(keySize+gap), keySize, keySize);
+        }
+    }
+    
+    const texture = new THREE.CanvasTexture(canvas);
+    return texture;
 }

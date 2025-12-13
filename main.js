@@ -158,7 +158,7 @@ function init() {
     scene.add(directionalLight);
     shadowCastingLights.push(directionalLight);
 
-    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb29a7a, 0.4);
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0xb29a7a, 0.6);
     hemiLight.position.set(0, roomHeight, 0);
     scene.add(hemiLight);
 
@@ -918,7 +918,7 @@ function init() {
     // --- 6. HIDDEN COVE LIGHTS (PointLights) - Group 1 ---
     function createCoveLight(x, z) {
         // Pure White Light
-        const light = new THREE.PointLight(0xEBD8B5, 0.5, 14, 1.2);
+        const light = new THREE.PointLight(0xEBD8B5, 0.4, 18, 2.0);
         light.position.set(x, dropCeilingHeight + 0.5, z);
         scene.add(light);
         coveLights.push({ type: 'light', obj: light });
@@ -994,16 +994,16 @@ function init() {
 
         // D. The Actual Light (UPDATED SETTINGS)
         // Intensity 0.5 is much softer.
-        const spot = new THREE.SpotLight(0xEBD8B5, 0.35);
+        const spot = new THREE.SpotLight(0xEBD8B5, 0.6);
         spot.position.set(pos.x, recessedHeight - 0.1, pos.z);
         spot.target.position.set(pos.x, 0, pos.z);
 
         // Wider angle (PI/2.5) spreads light more, reducing the "hot spot" on floor
-        spot.angle = Math.PI / 2.5;
-        spot.penumbra = 0.6;
+        spot.angle = Math.PI / 1.8;
+        spot.penumbra = 1.0;
         // 2. ADD THESE LINES TO FIX THE "WHITE FLOOR" 
-        spot.decay = 1.0;    // Makes light fade as it travels (physics)
-        spot.distance = 15;  // The light stops affecting things after 15 meters    
+        spot.decay = 1.5;    // Makes light fade as it travels (physics)
+        spot.distance = 20;  // The light stops affecting things after 15 meters    
         spot.castShadow = true;
         spot.shadow.bias = -0.0001;
 

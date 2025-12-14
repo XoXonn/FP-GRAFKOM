@@ -234,6 +234,16 @@ function init() {
         color: 0xd4b896,
         roughness: 0.7
     });
+    const sideDoorMaterial = new THREE.MeshStandardMaterial({
+        color: 0x9a9a9a,
+        roughness: 0.65,
+        metalness: 0.15
+    });
+    const sideDoorTrimMaterial = new THREE.MeshStandardMaterial({
+        color: 0x666666,
+        roughness: 0.55,
+        metalness: 0.2
+    });
     const deskMaterial = new THREE.MeshStandardMaterial({
         map: woodColor,
         roughnessMap: woodRough,
@@ -472,6 +482,60 @@ function init() {
     pole.position.set(0, windowY + windowHeight + 0.15, -roomLength / 2 + 0.12);
     scene.add(pole);
 
+    // Auxiliary gray door embedded in the back wall (left of the computer row)
+    const backDoorWidth = 3.2;
+    const backDoorHeight = 7.4;
+    const backDoorThickness = 0.12;
+    const backDoorFrameDepth = 0.26;
+    const backDoorFrameLip = 0.3;
+    const backDoorClearance = 0.25; // gap from left pillar to frame edge
+    const backDoorX = -roomWidth / 2 + pillarWidth + backDoorWidth / 2 + backDoorClearance;
+
+    const backDoorGroup = new THREE.Group();
+    backDoorGroup.userData.collidable = true;
+
+    const backDoorFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(
+            backDoorWidth + backDoorFrameLip,
+            backDoorHeight + backDoorFrameLip,
+            backDoorFrameDepth
+        ),
+        sideDoorTrimMaterial
+    );
+    backDoorFrame.position.set(0, (backDoorHeight + backDoorFrameLip) / 2, 0);
+    backDoorFrame.castShadow = true;
+    backDoorFrame.receiveShadow = true;
+
+    const backDoorPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(backDoorWidth, backDoorHeight, backDoorThickness),
+        sideDoorMaterial
+    );
+    backDoorPanel.position.set(0, backDoorHeight / 2, backDoorFrameDepth / 2 - backDoorThickness / 2 - 0.01);
+    backDoorPanel.castShadow = true;
+    backDoorPanel.receiveShadow = true;
+
+    const backDoorHandleMount = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.5, 0.08),
+        stainlessMaterial
+    );
+    backDoorHandleMount.position.set(backDoorWidth / 2 - 0.35, backDoorHeight * 0.05, backDoorThickness / 2 + 0.02);
+    backDoorHandleMount.castShadow = true;
+    backDoorHandleMount.receiveShadow = true;
+    backDoorPanel.add(backDoorHandleMount);
+
+    const backDoorHandle = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 1.2, 0.05),
+        stainlessMaterial
+    );
+    backDoorHandle.position.set(0, 0.45, 0.04);
+    backDoorHandle.castShadow = true;
+    backDoorHandleMount.add(backDoorHandle);
+
+    backDoorGroup.add(backDoorFrame);
+    backDoorGroup.add(backDoorPanel);
+    backDoorGroup.position.set(backDoorX, 0, 0.12);
+    backWallGroup.add(backDoorGroup);
+
     // Front wall with door opening on the left
     const doorWidth = 6;
     const doorHeight = 7;
@@ -652,6 +716,18 @@ function init() {
     portalHeader.castShadow = true;
     portalHeader.receiveShadow = true;
     scene.add(portalHeader);
+
+    // EXIT lettering directly on the portal header facing the interior
+    const exitLetterWidth = doorWidth * 0.55;
+    const exitLetterHeight = 0.5;
+    const exitLetter = new THREE.Mesh(new THREE.PlaneGeometry(exitLetterWidth, exitLetterHeight), exitSignMaterial);
+    exitLetter.position.set(
+        doorX,
+        doorHeight + portalHeaderHeight - exitLetterHeight / 2 - 0.05,
+        portalZ - portalColumnDepth / 2 - 0.03
+    );
+    exitLetter.rotation.y = Math.PI; // Face the interior
+    scene.add(exitLetter);
 
     // Access control panel + illuminated button
     const accessPanel = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.0, 0.06), towerMaterial);
@@ -838,7 +914,6 @@ function init() {
     wallLeftGroup.add(accentBottomMesh);
 
     scene.add(wallLeftGroup);
-
 
     // Right Wall (Mirrored)
     const wallRightGroup = new THREE.Group();

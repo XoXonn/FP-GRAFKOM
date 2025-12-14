@@ -146,7 +146,9 @@ function init() {
 
     // Main directional light (simulating natural daylight from front door - NOT toggleable)
     const directionalLight = new THREE.DirectionalLight(0xfff5e6, 0.2);
-    directionalLight.position.set(-8, 12, 18); // From front-left where door is
+    directionalLight.position.set(0, roomHeight, 0); // Overhead light source
+    directionalLight.target.position.set(0, 0, 0);
+    scene.add(directionalLight.target);
     directionalLight.castShadow = true;
 
     directionalLight.shadow.mapSize.width = 2048;
@@ -218,6 +220,14 @@ function init() {
     const screenContentMaterial = new THREE.MeshBasicMaterial({
         map: screenTexture
     });
+    const seLogoTexture = textureLoader.load('img/logo.png');
+    const seLogoMaterial = new THREE.MeshStandardMaterial({
+        map: seLogoTexture,
+        transparent: true,
+        roughness: 0.6,
+        metalness: 0.1,
+        side: THREE.DoubleSide
+    });
 
     // --- Materials ---
     const floorMaterial = new THREE.MeshStandardMaterial({
@@ -283,6 +293,15 @@ function init() {
         ior: 1.45,
         thickness: 0.18,
         side: THREE.DoubleSide
+    });
+    const doorGlassMaterial = new THREE.MeshPhysicalMaterial({
+        color: 0xffffff,
+        metalness: 0,
+        roughness: 0.2,
+        transmission: 0.92,
+        transparent: true,
+        opacity: 0.45,
+        thickness: 0.2
     });
     const frostedGlassMaterial = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
@@ -533,7 +552,7 @@ function init() {
 
     backDoorGroup.add(backDoorFrame);
     backDoorGroup.add(backDoorPanel);
-    backDoorGroup.position.set(backDoorX, 0, 0.12);
+    backDoorGroup.position.set(backDoorX, 0, 0.18); // push forward slightly to cover trim line
     backWallGroup.add(backDoorGroup);
 
     // Front wall with door opening on the left
@@ -589,14 +608,14 @@ function init() {
     // Glass leaves
     const leftDoorGlass = new THREE.Mesh(
         new THREE.BoxGeometry(leafWidth, leafHeight, 0.05),
-        glassMaterial
+        doorGlassMaterial
     );
     leftDoorGlass.position.set(doorX - doorWidth / 4, doorHeight / 2, roomLength / 2 - 0.1);
     scene.add(leftDoorGlass);
 
     const rightDoorGlass = new THREE.Mesh(
         new THREE.BoxGeometry(leafWidth, leafHeight, 0.05),
-        glassMaterial
+        doorGlassMaterial
     );
     rightDoorGlass.position.set(doorX + doorWidth / 4, doorHeight / 2, roomLength / 2 - 0.1);
     scene.add(rightDoorGlass);
@@ -628,6 +647,14 @@ function init() {
     }
     // addFrostPanel(doorX - doorWidth / 4);
     // addFrostPanel(doorX + doorWidth / 4);
+
+    // Centered SE logo sticker on the front glass doors
+    const doorLogoWidth = 4.2;
+    const doorLogoHeight = 2.3;
+    const doorLogo = new THREE.Mesh(new THREE.PlaneGeometry(doorLogoWidth, doorLogoHeight), seLogoMaterial);
+    doorLogo.position.set(doorX, doorHeight / 2 - 0.2, roomLength / 2 - 0.12);
+    doorLogo.rotation.y = Math.PI; // face the interior
+    scene.add(doorLogo);
 
     // Door frame - vertical sides
     const leftFrame = new THREE.Mesh(
@@ -748,39 +775,63 @@ function init() {
     scene.add(accessButton);
 
     // Handles (stainless) + push plates
-    const handleHeight = 2.2;
-    const handleDepth = 0.12;
-    const handleWidth = 0.14;
+    const handleMaterial = new THREE.MeshStandardMaterial({
+        color: 0xb7b7b7,
+        roughness: 0.35,
+        metalness: 0.85
+    });
+    const handleHeight = 2.4;
+    const handleDepth = 0.18;
+    const handleWidth = 0.2;
     const handleOffsetX = leafWidth * 0.22;
-    const handleY = doorHeight / 2;
-    const handleZ = roomLength / 2 - 0.06;
+    const handleY = doorHeight / 2 + 0.2;
+    const handleZ = roomLength / 2 - 0.03;
 
-    const leftHandle = new THREE.Mesh(
-        new THREE.BoxGeometry(handleWidth, handleHeight, handleDepth),
-        stainlessMaterial
-    );
-    leftHandle.position.set(doorX - doorWidth / 4 + handleOffsetX, handleY, handleZ);
-    scene.add(leftHandle);
+    function createDoorHandle(sign) {
+        const group = new THREE.Group();
 
-    const rightHandle = new THREE.Mesh(
-        new THREE.BoxGeometry(handleWidth, handleHeight, handleDepth),
-        stainlessMaterial
-    );
-    rightHandle.position.set(doorX + doorWidth / 4 - handleOffsetX, handleY, handleZ);
-    scene.add(rightHandle);
+        const mainBar = new THREE.Mesh(
+            new THREE.BoxGeometry(handleWidth, handleHeight, handleDepth),
+            handleMaterial
+        );
+        mainBar.castShadow = true;
+        group.add(mainBar);
 
-    const pushPlateWidth = 0.28;
-    const pushPlateHeight = 0.9;
-    const pushPlateZ = handleZ + 0.03;
+        const capThickness = 0.28;
+        const capHeight = 0.3;
+        [-1, 1].forEach(dir => {
+            const cap = new THREE.Mesh(
+                new THREE.BoxGeometry(handleWidth * 1.05, capHeight, capThickness),
+                handleMaterial
+            );
+            cap.position.set(0, dir * (handleHeight / 2 - capHeight / 2), (handleDepth - capThickness) / 2);
+            group.add(cap);
+        });
 
-    const leftPush = new THREE.Mesh(new THREE.PlaneGeometry(pushPlateWidth, pushPlateHeight), stainlessMaterial);
-    leftPush.position.set(leftHandle.position.x, handleY, pushPlateZ);
-    leftPush.rotation.y = Math.PI;
-    scene.add(leftPush);
+        const sideThickness = 0.08;
+        const sideHeight = handleHeight * 0.6;
+        const sideLength = handleDepth * 1.8;
+        [-1, 1].forEach(dir => {
+            const side = new THREE.Mesh(
+                new THREE.BoxGeometry(sideThickness, sideHeight, sideLength),
+                handleMaterial
+            );
+            side.position.set(dir * (handleWidth / 2 - sideThickness / 2), 0, -handleDepth / 2 + sideLength / 2);
+            group.add(side);
+        });
 
-    const rightPush = leftPush.clone();
-    rightPush.position.x = rightHandle.position.x;
-    scene.add(rightPush);
+        group.position.set(doorX + sign * (doorWidth / 4 - handleOffsetX), handleY, handleZ);
+        group.castShadow = true;
+        group.receiveShadow = true;
+        group.renderOrder = 1;
+        scene.add(group);
+    }
+
+    leftDoorGlass.renderOrder = -1;
+    rightDoorGlass.renderOrder = -1;
+    doorLogo.renderOrder = 1.5;
+    createDoorHandle(-1);
+    createDoorHandle(1);
 
     // Floor patch hinges (bottom pivot/closer) + top patches
     const patchWidth = 0.35;
@@ -1179,7 +1230,7 @@ function init() {
         // 2. ADD THESE LINES TO FIX THE "WHITE FLOOR" 
         spot.decay = 1.5;    // Makes light fade as it travels (physics)
         spot.distance = 20;  // The light stops affecting things after 15 meters    
-        spot.castShadow = true;
+        spot.castShadow = downLightsActive;
         spot.shadow.bias = -0.0001;
 
         scene.add(spot);
@@ -1225,14 +1276,7 @@ function init() {
     // logoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.63, 0);
     // scene.add(logoPlane);
 
-    // SE Logo (Image Texture)
-    const seLogoTexture = new THREE.TextureLoader().load('img/logo.png');
-    const seLogoMaterial = new THREE.MeshStandardMaterial({
-        map: seLogoTexture,
-        transparent: true,
-        roughness: 0.6,
-        metalness: 0.1
-    });
+    // SE Logo (Image Texture) on the right wall
     const seLogoPlane = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 2.55), seLogoMaterial);
     seLogoPlane.rotation.y = -Math.PI / 2;
     seLogoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.80, 5.0);
@@ -2225,43 +2269,7 @@ function init() {
  * Toggles the visibility of all lights in the toggleableLights array.
  */
 function toggleLights() {
-    lightsOn = !lightsOn;
-    toggleableLights.forEach(item => {
-        if (item.bulb) {
-            // Handle Mesh Objects
-            if (item.bulb.userData.isLedStrip) {
-                // Special handling for the LED Strip (Basic Material)
-                if (lightsOn) {
-                    item.bulb.material.color.setHex(item.bulb.userData.onColor);
-                } else {
-                    item.bulb.material.color.setHex(0x111111); // Dark grey when off
-                }
-            } else {
-                // Standard Bulbs (Emissive Material)
-                if (lightsOn) {
-                    item.bulb.material.emissive.setHex(item.originalEmissive);
-                    item.bulb.material.emissiveIntensity = item.originalIntensity;
-                } else {
-                    item.bulb.material.emissive.setHex(0x000000);
-                    item.bulb.material.emissiveIntensity = 0;
-                }
-            }
-        } else {
-            // Regular Light Objects (PointLight, etc)
-            item.visible = lightsOn;
-        }
-    });
-
-    // Turn off all shadows when the lights are off
-    shadowCastingLights.forEach(light => {
-        light.castShadow = lightsOn;
-        if (light.shadow) {
-            light.shadow.autoUpdate = lightsOn;
-            light.shadow.needsUpdate = true;
-        }
-    });
-    renderer.shadowMap.enabled = lightsOn;
-    renderer.shadowMap.autoUpdate = lightsOn;
+    console.warn('toggleLights is deprecated. Use toggleCoveLights (1) or toggleDownLights (2).');
 }
 
 function onWindowResize() {
@@ -2362,28 +2370,29 @@ function toggleCoveLights() {
     });
 }
 
-function toggleDownLights() {
-    downLightsActive = !downLightsActive;
-
+function updateDownLightsState() {
+    const active = downLightsActive;
     downLights.forEach(item => {
         if (item.type === 'mesh') {
-            // Toggle bulb physical material
-            if (downLightsActive) {
-                item.obj.material.emissive.setHex(0xEBD8B5); // CHANGED: New Color
-                item.obj.material.emissiveIntensity = 0.5;   // CHANGED: New Intensity
+            if (active) {
+                item.obj.material.emissive.setHex(0xEBD8B5);
+                item.obj.material.emissiveIntensity = 0.5;
             } else {
                 item.obj.material.emissive.setHex(0x000000);
                 item.obj.material.emissiveIntensity = 0;
             }
-        }
-        else if (item.type === 'sprite') {
-            item.obj.visible = downLightsActive;
-        }
-        else if (item.type === 'light') {
-            item.obj.visible = downLightsActive;
-            item.obj.castShadow = downLightsActive;
+        } else if (item.type === 'sprite') {
+            item.obj.visible = active;
+        } else if (item.type === 'light') {
+            item.obj.visible = active;
+            item.obj.castShadow = active;
         }
     });
+}
+
+function toggleDownLights() {
+    downLightsActive = !downLightsActive;
+    updateDownLightsState();
 }
 
 // --- ADD THIS AT THE BOTTOM OF MAIN.JS ---

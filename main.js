@@ -265,10 +265,13 @@ function init() {
     const glassMaterial = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
         metalness: 0,
-        roughness: 0,
-        transmission: 0.9,
+        roughness: 0.02,
+        transmission: 1,
         transparent: true,
-        thickness: 0.5
+        opacity: 0.12,
+        ior: 1.45,
+        thickness: 0.18,
+        side: THREE.DoubleSide
     });
     const frostedGlassMaterial = new THREE.MeshPhysicalMaterial({
         color: 0xffffff,
@@ -296,7 +299,21 @@ function init() {
         transparent: true,
         opacity: 0.95
     });
-    const exitSignMaterial = new THREE.MeshBasicMaterial({ color: 0x0f5d2b });
+    // EXIT sign texture with white text on green background
+    const exitCanvas = document.createElement('canvas');
+    exitCanvas.width = 256;
+    exitCanvas.height = 128;
+    const exitCtx = exitCanvas.getContext('2d');
+    exitCtx.fillStyle = '#0f5d2b';
+    exitCtx.fillRect(0, 0, exitCanvas.width, exitCanvas.height);
+    exitCtx.fillStyle = '#ffffff';
+    exitCtx.font = 'bold 80px sans-serif';
+    exitCtx.textAlign = 'center';
+    exitCtx.textBaseline = 'middle';
+    exitCtx.fillText('EXIT', exitCanvas.width / 2, exitCanvas.height / 2);
+    const exitTexture = new THREE.CanvasTexture(exitCanvas);
+    exitTexture.needsUpdate = true;
+    const exitSignMaterial = new THREE.MeshBasicMaterial({ map: exitTexture, transparent: true, side: THREE.DoubleSide });
     // const cabinetMaterial = new THREE.MeshStandardMaterial({
     //     color: 0xf0f0f0, roughness: 0.5, metalness: 0.1
     // });
@@ -459,16 +476,35 @@ function init() {
     const doorHeight = 7;
     const doorX = -roomWidth / 2 + doorWidth / 2 + 3.5;
 
-    // Wall sections around door
-    // Right section of front wall (COMMENTED OUT - overlaps with cabinet)
-    // const frontWallRightWidth = roomWidth / 2 - doorWidth / 2 - 2;
-    // const frontWallRight = new THREE.Mesh(
-    //     new THREE.BoxGeometry(frontWallRightWidth, roomHeight, 0.3),
-    //     wallMaterial
-    // );
-    // frontWallRight.position.set(roomWidth / 2 - frontWallRightWidth / 2, roomHeight / 2, roomLength / 2);
-    // frontWallRight.receiveShadow = true;
-    // scene.add(frontWallRight);
+    // Wall sections around door (fill left/right gaps with the same wall material)
+    const frontWallDepth = 0.3;
+    const frontWallZ = roomLength / 2;
+    const leftEdge = -roomWidth / 2;
+    const rightEdge = roomWidth / 2;
+    const doorLeft = doorX - doorWidth / 2;
+    const doorRight = doorX + doorWidth / 2;
+
+    const frontWallLeftWidth = Math.max(0, doorLeft - leftEdge);
+    if (frontWallLeftWidth > 0.01) {
+        const frontWallLeft = new THREE.Mesh(
+            new THREE.BoxGeometry(frontWallLeftWidth, roomHeight, frontWallDepth),
+            wallMaterial
+        );
+        frontWallLeft.position.set(leftEdge + frontWallLeftWidth / 2, roomHeight / 2, frontWallZ);
+        frontWallLeft.receiveShadow = true;
+        scene.add(frontWallLeft);
+    }
+
+    const frontWallRightWidth = Math.max(0, rightEdge - doorRight);
+    if (frontWallRightWidth > 0.01) {
+        const frontWallRight = new THREE.Mesh(
+            new THREE.BoxGeometry(frontWallRightWidth, roomHeight, frontWallDepth),
+            wallMaterial
+        );
+        frontWallRight.position.set(doorRight + frontWallRightWidth / 2, roomHeight / 2, frontWallZ);
+        frontWallRight.receiveShadow = true;
+        scene.add(frontWallRight);
+    }
 
     // Top section above door
     const frontWallTop = new THREE.Mesh(
@@ -478,18 +514,6 @@ function init() {
     frontWallTop.position.set(doorX, roomHeight - (roomHeight - doorHeight) / 2, roomLength / 2);
     frontWallTop.receiveShadow = true;
     scene.add(frontWallTop);
-
-    // Left section of front wall
-    const frontWallLeftWidth = -roomWidth / 2 + doorX - doorWidth / 2;
-    if (frontWallLeftWidth > 0) {
-        const frontWallLeft = new THREE.Mesh(
-            new THREE.BoxGeometry(frontWallLeftWidth, roomHeight, 0.3),
-            wallMaterial
-        );
-        frontWallLeft.position.set(-roomWidth / 2 + frontWallLeftWidth / 2, roomHeight / 2, roomLength / 2);
-        frontWallLeft.receiveShadow = true;
-        scene.add(frontWallLeft);
-    }
 
     // Double glass doors with frame + hardware (front entrance)
     const frameThickness = 0.18;
@@ -537,8 +561,8 @@ function init() {
         stripeBottom.position.y = doorHeight / 2 - stripeHeight * 1.6;
         scene.add(stripeBottom);
     }
-    addFrostPanel(doorX - doorWidth / 4);
-    addFrostPanel(doorX + doorWidth / 4);
+    // addFrostPanel(doorX - doorWidth / 4);
+    // addFrostPanel(doorX + doorWidth / 4);
 
     // Door frame - vertical sides
     const leftFrame = new THREE.Mesh(
@@ -598,6 +622,53 @@ function init() {
     );
     rightSidePanel.position.set(doorX + doorWidth / 2 + sidePanelWidth / 2 + 0.1, sidePanelHeight / 2, sidePanelZ);
     scene.add(rightSidePanel);
+
+    // Portal-style cladding inspired by reference photo
+    const portalColumnWidth = 0.75;
+    const portalColumnDepth = 0.45;
+    const portalHeight = doorHeight + transomHeight + 0.35;
+    const portalInset = 0.08;
+    const portalZ = roomLength / 2 - portalColumnDepth / 2 + 0.02;
+
+    const columnGeo = new THREE.BoxGeometry(portalColumnWidth, portalHeight, portalColumnDepth);
+    const leftPortalColumn = new THREE.Mesh(columnGeo, doorFrameMaterial);
+    leftPortalColumn.position.set(doorLeft - portalInset - portalColumnWidth / 2, portalHeight / 2, portalZ);
+    leftPortalColumn.castShadow = true;
+    leftPortalColumn.receiveShadow = true;
+    scene.add(leftPortalColumn);
+
+    const rightPortalColumn = leftPortalColumn.clone();
+    rightPortalColumn.position.x = doorRight + portalInset + portalColumnWidth / 2;
+    scene.add(rightPortalColumn);
+
+    const portalHeaderHeight = portalHeight - doorHeight;
+    const portalHeaderWidth = doorWidth + 2 * (portalColumnWidth + portalInset);
+    const portalHeader = new THREE.Mesh(
+        new THREE.BoxGeometry(portalHeaderWidth, portalHeaderHeight, portalColumnDepth),
+        doorFrameMaterial
+    );
+    portalHeader.position.set(doorX, doorHeight + portalHeaderHeight / 2, portalZ);
+    portalHeader.castShadow = true;
+    portalHeader.receiveShadow = true;
+    scene.add(portalHeader);
+
+    // Access control panel + illuminated button
+    const accessPanel = new THREE.Mesh(new THREE.BoxGeometry(0.32, 1.0, 0.06), towerMaterial);
+    accessPanel.position.set(leftPortalColumn.position.x + portalColumnWidth / 2 - 0.18, 1.2, portalZ + portalColumnDepth / 2 - 0.03);
+    accessPanel.castShadow = true;
+    accessPanel.receiveShadow = true;
+    scene.add(accessPanel);
+
+    const accessRing = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.05, 32), powerChannelMaterial);
+    accessRing.rotation.x = Math.PI / 2;
+    accessRing.position.set(accessPanel.position.x, accessPanel.position.y + 0.05, portalZ + portalColumnDepth / 2 + 0.005);
+    scene.add(accessRing);
+
+    const accessButton = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.03, 24), powerLedMaterial);
+    accessButton.rotation.x = Math.PI / 2;
+    accessButton.position.copy(accessRing.position);
+    accessButton.position.z += 0.015;
+    scene.add(accessButton);
 
     // Handles (stainless) + push plates
     const handleHeight = 2.2;
@@ -665,11 +736,39 @@ function init() {
     rightTopPatch.position.x = doorX + doorWidth / 4;
     scene.add(rightTopPatch);
 
-    // EXIT signage
-    const exitSign = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.36), exitSignMaterial);
-    exitSign.position.set(doorX, doorHeight + transomHeight - 0.25, roomLength / 2 - 0.01);
-    exitSign.rotation.y = Math.PI;
-    scene.add(exitSign);
+    // EXIT signage assembly protruding above the portal
+    const exitSignWidth = 1.35;
+    const exitSignHeight = 0.45;
+    const exitSignDepth = 0.08;
+    const exitSignY = portalHeight - exitSignHeight / 2 - 0.08;
+    const exitSignZ = portalZ + portalColumnDepth / 2 + exitSignDepth / 2 + 0.05;
+
+    const exitSignBaseMaterial = new THREE.MeshStandardMaterial({
+        color: 0x0f5d2b,
+        emissive: 0x0f5d2b,
+        emissiveIntensity: 0.4,
+        roughness: 0.35
+    });
+    const exitSignBase = new THREE.Mesh(new THREE.BoxGeometry(exitSignWidth, exitSignHeight, exitSignDepth), exitSignBaseMaterial);
+    exitSignBase.castShadow = true;
+    exitSignBase.receiveShadow = true;
+
+    const exitSignFace = new THREE.Mesh(
+        new THREE.PlaneGeometry(exitSignWidth * 0.92, exitSignHeight * 0.6),
+        exitSignMaterial
+    );
+    exitSignFace.position.z = exitSignDepth / 2 + 0.001;
+
+    const exitSignFaceBack = exitSignFace.clone();
+    exitSignFaceBack.rotation.y = Math.PI;
+    exitSignFaceBack.position.z = -exitSignDepth / 2 - 0.001;
+
+    const exitSignGroup = new THREE.Group();
+    exitSignGroup.add(exitSignBase);
+    exitSignGroup.add(exitSignFace);
+    exitSignGroup.add(exitSignFaceBack);
+    exitSignGroup.position.set(doorX, exitSignY, exitSignZ);
+    scene.add(exitSignGroup);
 
     // ... (All other room geometry: TV, panels, walls, ceiling, clock, AC, logo) ...
 

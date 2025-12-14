@@ -1906,7 +1906,7 @@ function init() {
                 material: bookMaterial2,
                 align: 'center',
                 scale: { x: 1.1, y: 1.1 },
-                offset: { x: +0.1, y: -0.08, z: 0 }
+                offset: { x: +0.2, y: -0.08, z: 0 }
             },
             {
                 col: 0,
@@ -1920,7 +1920,7 @@ function init() {
                 material: bookMaterial5,
                 align: 'right',
                 scale: { x: 1.3, y: 1.3 },
-                offset: { x: +4.35, y: -2, z: 0 }
+                offset: { x: +4, y: -2, z: 0 }
             }
             ]
         });

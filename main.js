@@ -1388,7 +1388,7 @@ function init() {
         return chairGroup;
     }
 
-// --- REPLACE YOUR createComputerStation FUNCTION WITH THIS ---
+    // --- REPLACE YOUR createComputerStation FUNCTION WITH THIS ---
     function createComputerStation(x, y, z, rotation) {
         const station = new THREE.Group();
         const deskHeight = y;
@@ -1405,10 +1405,10 @@ function init() {
         station.add(display);
 
         // --- 3. UPDATED: Circular Stand & Neck ---
-        
+
         // A. The Base (Circle)
         // CylinderGeometry(radiusTop, radiusBottom, height, segments)
-        const baseGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.02, 32); 
+        const baseGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.02, 32);
         const base = new THREE.Mesh(baseGeo, monitorMaterial);
         base.position.set(0, deskHeight + 0.01, 0); // Sits on desk
         base.castShadow = true;
@@ -1439,7 +1439,7 @@ function init() {
 
 
         // --- 5. UPDATED: Realistic Keyboard ---
-        
+
         // Create material once (if not already created) to save memory
         if (!window.keyboardMat) {
             window.keyboardMat = new THREE.MeshStandardMaterial({
@@ -1781,7 +1781,7 @@ function init() {
         });
 
         // Dimensions
-        const totalTargetWidth = 18.0;
+        const totalTargetWidth = 16.675;
         const separatorWidth = 0.4;
         // const cornerBlockWidth = 0.8;
 
@@ -2080,7 +2080,7 @@ function init() {
                 material: bookMaterial2,
                 align: 'center',
                 scale: { x: 1.1, y: 1.1 },
-                offset: { x: +0.1, y: -0.08, z: 0 }
+                offset: { x: +0.2, y: -0.08, z: 0 }
             },
             {
                 col: 0,
@@ -2094,7 +2094,7 @@ function init() {
                 material: bookMaterial5,
                 align: 'right',
                 scale: { x: 1.3, y: 1.3 },
-                offset: { x: +4.35, y: -2, z: 0 }
+                offset: { x: +4, y: -2, z: 0 }
             }
             ]
         });
@@ -2153,8 +2153,14 @@ function init() {
             group.add(ac);
         }, undefined, function (e) { console.error(e); });
 
+        // Anchor calculation: 
+        // Original Center = 4.5, Original Width = 18.0
+        // Anchored Edge (Visual Left/Wall Corner) = 4.5 + (18.0 / 2) = 13.5
+        const anchorX = 13.5;
+        const newX = anchorX - (totalTargetWidth / 2);
+
         group.rotation.y = Math.PI;
-        group.position.set(4.5, 0, 17.1);
+        group.position.set(newX, 0, 17.1);
         group.userData.collidable = true;
 
         scene.add(group);
@@ -2385,46 +2391,46 @@ function createKeyboardTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 512; canvas.height = 256;
     const ctx = canvas.getContext('2d');
-    
+
     // 1. Background (Dark Plastic)
-    ctx.fillStyle = '#151515'; 
-    ctx.fillRect(0,0, 512, 256);
+    ctx.fillStyle = '#151515';
+    ctx.fillRect(0, 0, 512, 256);
 
     // 2. Draw Keys (Lighter Grey blocks)
     ctx.fillStyle = '#444444';
-    
+
     // Settings
-    const keySize = 28; 
+    const keySize = 28;
     const gap = 6;
-    const startX = 20; 
+    const startX = 20;
     const startY = 30;
 
     // A. Main QWERTY Area (Rows of keys)
-    for(let row=0; row<5; row++) {
-        for(let col=0; col<13; col++) {
-             // Randomize key width slightly for realism? No, keep simple grid.
-             ctx.fillRect(startX + col*(keySize+gap), startY + row*(keySize+gap), keySize, keySize);
+    for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 13; col++) {
+            // Randomize key width slightly for realism? No, keep simple grid.
+            ctx.fillRect(startX + col * (keySize + gap), startY + row * (keySize + gap), keySize, keySize);
         }
     }
     // Spacebar
-    ctx.fillRect(startX + 3*(keySize+gap), startY + 5*(keySize+gap), 6*(keySize+gap) - gap, keySize);
+    ctx.fillRect(startX + 3 * (keySize + gap), startY + 5 * (keySize + gap), 6 * (keySize + gap) - gap, keySize);
 
     // B. Navigation Keys (Arrows etc)
-    const navX = startX + 13*(keySize+gap) + 20;
-    for(let row=0; row<5; row++) {
-        for(let col=0; col<3; col++) {
-             ctx.fillRect(navX + col*(keySize+gap), startY + row*(keySize+gap), keySize, keySize);
+    const navX = startX + 13 * (keySize + gap) + 20;
+    for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 3; col++) {
+            ctx.fillRect(navX + col * (keySize + gap), startY + row * (keySize + gap), keySize, keySize);
         }
     }
 
     // C. Numpad Area
-    const numX = navX + 3*(keySize+gap) + 20;
-    for(let row=0; row<5; row++) {
-        for(let col=0; col<4; col++) {
-             ctx.fillRect(numX + col*(keySize+gap), startY + row*(keySize+gap), keySize, keySize);
+    const numX = navX + 3 * (keySize + gap) + 20;
+    for (let row = 0; row < 5; row++) {
+        for (let col = 0; col < 4; col++) {
+            ctx.fillRect(numX + col * (keySize + gap), startY + row * (keySize + gap), keySize, keySize);
         }
     }
-    
+
     const texture = new THREE.CanvasTexture(canvas);
     return texture;
 }

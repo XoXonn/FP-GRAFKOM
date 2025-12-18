@@ -21,7 +21,8 @@ let coveLights = [];       // Array for the hidden strip lights
 let downLights = [];       // Array for the 4 recessed bulbs
 let coveActive = true;     // State for cove lights
 let downLightsActive = true; // State for bulbs
-// --- MODIFICATION: Room boundaries for collision ---
+
+//Room boundaries for collision
 const roomWidth = 28;
 const roomLength = 36;
 const roomHeight = 11;
@@ -32,7 +33,7 @@ const boundaries = {
     zMin: -roomLength / 2 + collisionPadding,
     zMax: roomLength / 2 - collisionPadding,
 };
-// ----------------------------------------------------
+
 
 
 window.onload = function () {
@@ -203,7 +204,6 @@ function init() {
         tex.repeat.set(4, 2); // Repeat 4 times horizontally, 2 times vertically
     });
 
-    // We need a separate texture settings for the Ceiling (because it's huge)
     const ceilingColorTex = plasterColor.clone();
     const ceilingRoughTex = plasterRough.clone();
     const ceilingNormTex = plasterNorm.clone();
@@ -214,7 +214,7 @@ function init() {
         tex.repeat.set(10, 10); // Repeat more times for the large ceiling
     });
 
-    // 3. Screen Texture (New!)
+    // 3. Screen Textures
     const screenTexture = textureLoader.load('textures/screen_code.jpg');
     // MeshBasicMaterial makes it "glow" slightly (unaffected by shadows)
     const screenContentMaterial = new THREE.MeshBasicMaterial({
@@ -344,10 +344,6 @@ function init() {
     const exitTexture = new THREE.CanvasTexture(exitCanvas);
     exitTexture.needsUpdate = true;
     const exitSignMaterial = new THREE.MeshBasicMaterial({ map: exitTexture, transparent: true, side: THREE.DoubleSide });
-    // const cabinetMaterial = new THREE.MeshStandardMaterial({
-    //     color: 0xf0f0f0, roughness: 0.5, metalness: 0.1
-    // });
-    // const cabinetHandleMat = new THREE.MeshStandardMaterial({ color: 0xcccccc });
 
     const legMaterial = new THREE.MeshStandardMaterial({
         color: 0xffffff,
@@ -385,9 +381,9 @@ function init() {
     scene.add(floor);
 
 
-    // --- BACK WALL & WINDOWS (Fixed: Brown Backing Behind AC) ---
+    // --- BACK WALL & WINDOWS
     const backWallGroup = new THREE.Group();
-    const windowHeight = 6.8; // FIXED: 7.0 was too big (Room is only 4.5!)
+    const windowHeight = 6.8;
     const windowY = 2.0;
     const windowWidth = roomWidth - 0.3;
 
@@ -396,18 +392,17 @@ function init() {
     wallBottom.position.set(0, windowY / 2, 0);
     backWallGroup.add(wallBottom);
 
-    // 2. Top Wall (Backing behind AC) -> CHANGED TO BROWN (accentMaterial)
+    // 2. Top Wall
     const wallTopH = roomHeight - (windowY + windowHeight);
-    // Use Math.max to prevent negative height if numbers are tweaked
     const safeTopH = Math.max(0.1, wallTopH);
 
-    const wallTop = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, safeTopH, 0.2), accentMaterial); // <--- CHANGED MATERIAL
+    const wallTop = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, safeTopH, 0.2), accentMaterial);
     wallTop.position.set(0, windowY + windowHeight + safeTopH / 2, 0);
     backWallGroup.add(wallTop);
 
     // --- BROWN CORNER PILLARS ---
     const pillarWidth = 1.6;
-    const pillarGeo = new THREE.BoxGeometry(pillarWidth, roomHeight, 0.4); // Depth 0.4 to pop out
+    const pillarGeo = new THREE.BoxGeometry(pillarWidth, roomHeight, 0.4);
 
     // Left Pillar
     const pillarL = new THREE.Mesh(pillarGeo, accentMaterial);
@@ -420,7 +415,6 @@ function init() {
     backWallGroup.add(pillarR);
 
     // --- BROWN TOP BEAM (Connecting Pillars) ---
-    // Added this to ensure the brown section looks solid behind the AC
     const topDeco = new THREE.Mesh(new THREE.BoxGeometry(roomWidth, 0.8, 0.25), accentMaterial);
     topDeco.position.set(0, 4.1, 0);
     backWallGroup.add(topDeco);
@@ -471,10 +465,10 @@ function init() {
     windowFrameBottom.position.set(0, windowY + frameThick / 2, -roomLength / 2 + 0.08);
     scene.add(windowFrameBottom);
 
-    // 6 Rolling curtains (vertical panels) - same color as walls
+    // 6 Rolling curtains
     const curtainWidth = windowWidth / 6;
     const curtainMaterial = new THREE.MeshStandardMaterial({
-        color: 0xffffff, // Same as wall color
+        color: 0xffffff,
         roughness: 0.85,
         side: THREE.DoubleSide
     });
@@ -552,7 +546,7 @@ function init() {
 
     backDoorGroup.add(backDoorFrame);
     backDoorGroup.add(backDoorPanel);
-    backDoorGroup.position.set(backDoorX, 0, 0.18); // push forward slightly to cover trim line
+    backDoorGroup.position.set(backDoorX, 0, 0.18);
     backWallGroup.add(backDoorGroup);
 
     // Front wall with door opening on the left
@@ -645,8 +639,6 @@ function init() {
         stripeBottom.position.y = doorHeight / 2 - stripeHeight * 1.6;
         scene.add(stripeBottom);
     }
-    // addFrostPanel(doorX - doorWidth / 4);
-    // addFrostPanel(doorX + doorWidth / 4);
 
     // Centered SE logo sticker on the front glass doors
     const doorLogoWidth = 4.2;
@@ -753,7 +745,7 @@ function init() {
         doorHeight + portalHeaderHeight - exitLetterHeight / 2 - 0.05,
         portalZ - portalColumnDepth / 2 - 0.03
     );
-    exitLetter.rotation.y = Math.PI; // Face the interior
+    exitLetter.rotation.y = Math.PI;
     scene.add(exitLetter);
 
     // Access control panel + illuminated button
@@ -898,8 +890,6 @@ function init() {
     exitSignGroup.position.set(doorX, exitSignY, exitSignZ);
     scene.add(exitSignGroup);
 
-    // ... (All other room geometry: TV, panels, walls, ceiling, clock, AC, logo) ...
-
     // Left Wall with Zigzag Accent
     const wallLeftGroup = new THREE.Group();
     wallLeftGroup.position.set(-roomWidth / 2, roomHeight / 2, 0);
@@ -908,9 +898,9 @@ function init() {
     wallLeftBase.receiveShadow = true;
     wallLeftGroup.add(wallLeftBase);
 
-    const centerLineY = 2.0; // Ditingkatkan dari 0.5 ke 1.0
+    const centerLineY = 2.0;
     const bandThickness = 0.7;
-    const bandGap = 2.0; // Increased spacing (lowers the bottom position)
+    const bandGap = 2.0;
     const extrusionDepth = 0.28;
 
     const topBandPath = [
@@ -922,7 +912,7 @@ function init() {
         { z: roomLength / 2, y: centerLineY + bandThickness + 1.0 }           // 6. End (High 2)
     ];
 
-    // New Bottom Path (Custom 4-point shape)
+    // Bottom Path
     const topFirstSegmentLength = (roomLength * 3 / 8);
     const bottomP2Z = -roomLength / 2 + (topFirstSegmentLength * 0.75); // 3/4 length of point 1-2 in topband
 
@@ -935,12 +925,11 @@ function init() {
 
     const extrudeSettings = { steps: 1, depth: extrusionDepth, bevelEnabled: false };
 
-    // --- CREATE INVERTED PATHS (Reserved for future use) ---
-    // We negate Z to flip the pattern vertically/horizontally relative to wall start
+
     const topBandPathRight = topBandPath.map(p => ({ z: -p.z, y: p.y }));
     const bottomBandPathRight = bottomBandPath.map(p => ({ z: -p.z, y: p.y }));
 
-    // --- LEFT WALL TOP (Uses ORIGINAL Path) ---
+    // --- LEFT WALL TOP
     const accentTopGeo = new THREE.Shape();
     accentTopGeo.moveTo(topBandPath[0].z, topBandPath[0].y);
     for (let i = 1; i < topBandPath.length; i++) { accentTopGeo.lineTo(topBandPath[i].z, topBandPath[i].y); }
@@ -952,11 +941,10 @@ function init() {
     accentTopMesh.position.set(0.11, 0, 0);
     wallLeftGroup.add(accentTopMesh);
 
-    // --- LEFT WALL BOTTOM (Uses ORIGINAL Path) ---
+    // --- LEFT WALL BOTTOM
     const accentBottomGeo = new THREE.Shape();
     accentBottomGeo.moveTo(bottomBandPath[0].z, bottomBandPath[0].y);
     for (let i = 1; i < bottomBandPath.length; i++) { accentBottomGeo.lineTo(bottomBandPath[i].z, bottomBandPath[i].y); }
-    // Close shape by going UP (thickness) then back to start
     for (let i = bottomBandPath.length - 1; i >= 0; i--) { accentBottomGeo.lineTo(bottomBandPath[i].z, bottomBandPath[i].y + bandThickness); }
     accentBottomGeo.lineTo(bottomBandPath[0].z, bottomBandPath[0].y + bandThickness);
 
@@ -974,7 +962,7 @@ function init() {
     wallRightBase.receiveShadow = true;
     wallRightGroup.add(wallRightBase);
 
-    // --- RIGHT WALL TOP (Now uses ORIGINAL/Left Path) ---
+    // --- RIGHT WALL TOP
     const accentTopGeoRight = new THREE.Shape();
     accentTopGeoRight.moveTo(topBandPath[0].z, topBandPath[0].y);
     for (let i = 1; i < topBandPath.length; i++) { accentTopGeoRight.lineTo(topBandPath[i].z, topBandPath[i].y); }
@@ -985,7 +973,7 @@ function init() {
     accentTopMeshRight.position.set(0.11, 0, 0);
     wallRightGroup.add(accentTopMeshRight);
 
-    // --- RIGHT WALL BOTTOM (Now uses ORIGINAL/Left Path) ---
+    // --- RIGHT WALL BOTTOM
     const accentBottomGeoRight = new THREE.Shape();
     accentBottomGeoRight.moveTo(bottomBandPath[0].z, bottomBandPath[0].y);
     for (let i = 1; i < bottomBandPath.length; i++) { accentBottomGeoRight.lineTo(bottomBandPath[i].z, bottomBandPath[i].y); }
@@ -998,7 +986,6 @@ function init() {
 
     scene.add(wallRightGroup);
 
-    // ... (Add TV, Ceiling, Clock, AC, Logo objects here) ...
     // TV Screen with stand (in front of middle tables)
     const tvGroup = new THREE.Group();
     tvGroup.userData.collidable = true;
@@ -1006,29 +993,25 @@ function init() {
     // TV Screen
     const tvScreenGeo = new THREE.BoxGeometry(7, 4.0, 0.15);
     const tvScreen = new THREE.Mesh(tvScreenGeo, monitorMaterial);
-    tvScreen.position.set(0, 5.5, 0); // Higher position on stand
+    tvScreen.position.set(0, 5.5, 0);
     tvGroup.add(tvScreen);
 
     // TV Stand (vertical pole)
     const standGeo = new THREE.CylinderGeometry(0.15, 0.15, 5, 16);
     const standMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.5 });
     const stand = new THREE.Mesh(standGeo, standMat);
-    stand.position.set(0, 2.5, -0.2); // Moved back behind the screen
+    stand.position.set(0, 2.5, -0.2);
     tvGroup.add(stand);
 
     // TV Base (floor stand)
     const baseGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.15, 32);
     const base = new THREE.Mesh(baseGeo, standMat);
-    base.position.set(0, 0.08, -0.2); // Moved back to align with stand
+    base.position.set(0, 0.08, -0.2);
     tvGroup.add(base);
 
-    // Position TV in front of middle tables (facing them)
+    // Position TV in front of middle tables
     tvGroup.position.set(0, 0, -8);
     scene.add(tvGroup);
-
-    // ==========================================
-    // --- NEW: COVE CEILING (Matches Pic 1) ---
-    // ==========================================
 
     // Configuration for the Ceiling Design
     const dropCeilingHeight = roomHeight - 0.2; // The lower border height (e.g. 9.5)
@@ -1114,7 +1097,7 @@ function init() {
     vWallRight.position.set(innerWidth / 2 + 0.05, dropCeilingHeight + wallHeight / 2, 0);
     scene.add(vWallRight);
 
-    // --- 5. THE "SQUARE LAMP" (LED Strip Geometry) - Group 1 ---
+    //SQUARE LAMP (LED Strip Geometry)
     const stripGroup = new THREE.Group();
     const stripGeoTB = new THREE.BoxGeometry(innerWidth, stripThickness, stripThickness);
     const stripGeoLR = new THREE.BoxGeometry(stripThickness, stripThickness, innerLength - stripThickness * 2);
@@ -1141,7 +1124,7 @@ function init() {
     // Add strip meshes to 'coveLights' array
     stripGroup.children.forEach(mesh => coveLights.push({ type: 'mesh', obj: mesh }));
 
-    // --- 6. HIDDEN COVE LIGHTS (PointLights) - Group 1 ---
+    //HIDDEN COVE LIGHTS (PointLights)
     function createCoveLight(x, z) {
         // Pure White Light
         const light = new THREE.PointLight(0xEBD8B5, 0.4, 18, 2.0);
@@ -1166,8 +1149,6 @@ function init() {
         createCoveLight(x, innerLength / 2 - 0.5);
     }
 
-    // --- 7. THE 4 RECESSED BULBS (SOFTER & REALISTIC) ---
-
     // 1. Create the Glow Texture
     const glowTexture = createLightGlowTexture();
     const glowMaterial = new THREE.SpriteMaterial({
@@ -1182,7 +1163,7 @@ function init() {
     const realisticBulbOnMat = new THREE.MeshStandardMaterial({
         color: 0xEBD8B5,
         emissive: 0xEBD8B5,
-        emissiveIntensity: 0.5,  // Reduced so the bulb itself isn't blinding
+        emissiveIntensity: 0.5,
         roughness: 0.1
     });
 
@@ -1218,18 +1199,15 @@ function init() {
         glowSprite.position.set(pos.x, recessedHeight - 0.35, pos.z);
         scene.add(glowSprite);
 
-        // D. The Actual Light (UPDATED SETTINGS)
-        // Intensity 0.5 is much softer.
+        // D. The Actual Light
         const spot = new THREE.SpotLight(0xEBD8B5, 0.6);
         spot.position.set(pos.x, recessedHeight - 0.1, pos.z);
         spot.target.position.set(pos.x, 0, pos.z);
 
-        // Wider angle (PI/2.5) spreads light more, reducing the "hot spot" on floor
         spot.angle = Math.PI / 1.8;
         spot.penumbra = 1.0;
-        // 2. ADD THESE LINES TO FIX THE "WHITE FLOOR" 
-        spot.decay = 1.5;    // Makes light fade as it travels (physics)
-        spot.distance = 20;  // The light stops affecting things after 15 meters    
+        spot.decay = 1.5; 
+        spot.distance = 20;  
         spot.castShadow = downLightsActive;
         spot.shadow.bias = -0.0001;
 
@@ -1240,41 +1218,20 @@ function init() {
         downLights.push({ type: 'sprite', obj: glowSprite });
         downLights.push({ type: 'light', obj: spot });
     });
-    // --- 2. LOAD THE AC MODEL (New!) ---
-    // Make sure you deleted the old "acGroup" code block to avoid duplicates!
 
-    // --- AC UNIT (Updated Position) ---
+    // --- AC UNIT
     const gltfLoader = new THREE.GLTFLoader();
     gltfLoader.load('models/air_condition_daikin.glb', function (gltf) {
         const ac = gltf.scene;
         ac.scale.set(1.5, 1.5, 1.5);
         ac.rotation.y = 0;
 
-        // MOVED Y UP TO 4.2 (Very close to ceiling)
         ac.position.set(0, 9.5, -roomLength / 2 + 0.9);
 
         ac.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
         scene.add(ac);
     }, undefined, function (e) { console.error(e); });
-    // SE Logo
-    // const logoCanvas = document.createElement('canvas');
-    // logoCanvas.width = 512; logoCanvas.height = 512;
-    // const ctx = logoCanvas.getContext('2d');
-    // ctx.fillStyle = '#fafafa'; ctx.fillRect(0, 0, 512, 512);
-    // ctx.fillStyle = '#000000';
-    // ctx.fillRect(100, 80, 140, 40); ctx.fillRect(100, 80, 40, 100);
-    // ctx.fillRect(100, 140, 120, 40); ctx.fillRect(200, 140, 40, 100);
-    // ctx.fillRect(100, 200, 140, 40); ctx.fillRect(280, 80, 40, 160);
-    // ctx.fillRect(280, 80, 120, 40); ctx.fillRect(280, 140, 100, 40);
-    // ctx.fillRect(280, 200, 120, 40);
-    // ctx.font = 'bold 48px Arial'; ctx.textAlign = 'center';
-    // ctx.fillText('SOFTWARE', 256, 300); ctx.fillText('ENGINEERING', 256, 360);
-    // const logoTexture = new THREE.CanvasTexture(logoCanvas);
-    // const logoMat = new THREE.MeshStandardMaterial({ map: logoTexture, color: 0xffffff, transparent: false });
-    // const logoPlane = new THREE.Mesh(new THREE.PlaneGeometry(3.0, 1.0), logoMat);
-    // logoPlane.rotation.y = -Math.PI / 2;
-    // logoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.63, 0);
-    // scene.add(logoPlane);
+   
 
     // SE Logo (Image Texture) on the right wall
     const seLogoPlane = new THREE.Mesh(new THREE.PlaneGeometry(4.5, 2.55), seLogoMaterial);
@@ -1282,10 +1239,7 @@ function init() {
     seLogoPlane.position.set(roomWidth / 2 - 0.32, roomHeight * 0.80, 5.0);
     scene.add(seLogoPlane);
 
-    // --- END: Pasted geometry code ---
-
-
-    // --- Helper Functions (Same as before) ---
+    // --- Helper Functions
     function createChair(x, y, z, rotation) {
         const chairGroup = new THREE.Group();
         chairGroup.userData.collidable = true;
@@ -1391,11 +1345,9 @@ function init() {
             new THREE.Vector3(-0.6, 2.1, -0.3),  // C: Maju Datar (Lebih rendah)
             new THREE.Vector3(-0.6, 1.4, -0.7)   // D: Turun ke Kaki Depan
         ]);
-        // Tension dinaikkan ke 0.5 agar sudutnya lebih tegas (tidak terlalu melengkung bulat)
         armPathLeft.tension = 0.5;
 
         const armTubeGeo = new THREE.TubeGeometry(armPathLeft, 20, 0.04, 8, false);
-        // Menggunakan chromeMat agar warna SAMA dengan besi bawah
         const armLeft = new THREE.Mesh(armTubeGeo, chromeMat);
         armLeft.castShadow = true;
         chairGroup.add(armLeft);
@@ -1425,14 +1377,12 @@ function init() {
         padRight.position.set(0.6, 2.14, -0.05);
         chairGroup.add(padRight);
 
-        // --- FINAL ---
         chairGroup.position.set(x, 0, z);
         chairGroup.rotation.y = rotation;
         scene.add(chairGroup);
         return chairGroup;
     }
 
-    // --- REPLACE YOUR createComputerStation FUNCTION WITH THIS ---
     function createComputerStation(x, y, z, rotation) {
         const station = new THREE.Group();
         const deskHeight = y;
@@ -1448,8 +1398,6 @@ function init() {
         display.position.set(0, deskHeight + 0.75, 0.045);
         station.add(display);
 
-        // --- 3. UPDATED: Circular Stand & Neck ---
-
         // A. The Base (Circle)
         // CylinderGeometry(radiusTop, radiusBottom, height, segments)
         const baseGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.02, 32);
@@ -1464,8 +1412,6 @@ function init() {
         neck.position.set(0, deskHeight + 0.2, -0.05); // Offset back slightly
         neck.castShadow = true;
         station.add(neck);
-        // ------------------------------------------
-
 
         // 4. Tower (Gaming PC)
         const towerHeight = 1.6;
@@ -1482,8 +1428,6 @@ function init() {
         station.add(strip);
 
 
-        // --- 5. UPDATED: Realistic Keyboard ---
-
         // Create material once (if not already created) to save memory
         if (!window.keyboardMat) {
             window.keyboardMat = new THREE.MeshStandardMaterial({
@@ -1496,20 +1440,15 @@ function init() {
         const keyboardGeo = new THREE.BoxGeometry(1.4, 0.03, 0.45);
         const keyboard = new THREE.Mesh(keyboardGeo, window.keyboardMat);
         keyboard.position.set(0, deskHeight, 0.7);
-        keyboard.rotation.x = 0.08; // Slight tilt for ergonomics
+        keyboard.rotation.x = 0.08;
         keyboard.castShadow = true;
         station.add(keyboard);
-        // ------------------------------------------
 
         station.position.set(x, 0, z);
         station.rotation.y = rotation;
         scene.add(station);
     }
 
-
-    // Helper to create a soft glow texture programmatically
-    // Helper to create a soft glow texture programmatically
-    // Helper to create a soft glow texture programmatically
     function createLightGlowTexture() {
         const canvas = document.createElement('canvas');
         canvas.width = 64; canvas.height = 64;
@@ -1536,11 +1475,10 @@ function init() {
         const powerChannel = options.powerChannel === true;
         const powerStripCount = options.powerStripCount || 2; // default 2 strips unless specified
         const desk = new THREE.Group();
-        desk.userData.collidable = true; // <--- TAGGED AS OBSTACLE
+        desk.userData.collidable = true;
 
-        const topThickness = 0.15;
+        const    topThickness = 0.15;
         if (powerChannel) {
-            // ---- Split tabletop into two boards with a center gap ----
             const gapWidth = 0.12; // small gap between the two boards
             const boardWidth = (width - gapWidth) / 2;
             const boardGeo = new THREE.BoxGeometry(boardWidth, topThickness, depth);
@@ -1557,15 +1495,12 @@ function init() {
             rightTop.receiveShadow = true;
             desk.add(rightTop);
 
-            // ---- Power channel recessed in the center gap ----
             const surfaceY = leftTop.position.y + topThickness / 2;
-
-            // Metal channel running along table depth, slightly recessed
             const channelWidth = gapWidth * 0.9;
-            const edgeClearance = 0.01; // minimal clearance so channel/caps nearly reach table edge
+            const edgeClearance = 0.01;
             const channelLength = depth - edgeClearance * 2;
             const channelThickness = 0.02;
-            const channelRecess = 0.012; // sink below surface a bit
+            const channelRecess = 0.012;
             const channel = new THREE.Mesh(
                 new THREE.BoxGeometry(channelWidth, channelThickness, channelLength),
                 powerChannelMaterial
@@ -1575,7 +1510,6 @@ function init() {
             channel.receiveShadow = true;
             desk.add(channel);
 
-            // End covers similar to photo
             const capHeight = 0.06;
             const capLength = 0.16;
             [-1, 1].forEach(sign => {
@@ -1623,7 +1557,7 @@ function init() {
 
             // Place strips along the channel (default 2, customizable)
             if (powerStripCount <= 2) {
-                const stripOffset = depth * 0.25; // place roughly at 1/4 and -1/4 depth
+                const stripOffset = depth * 0.25;
                 addStrip(stripOffset);
                 if (powerStripCount > 1) {
                     addStrip(-stripOffset);
@@ -1678,15 +1612,6 @@ function init() {
     const frontStartX = -roomWidth / 2 + 2;
     const frontSpacing = 2.05;
 
-    // for (let i = 0; i < 14; i++) {
-    //     const testX = frontStartX + i * frontSpacing;
-
-    //     // Check distance to door (doorX is 5)
-    //     if (Math.abs(testX - doorX) > 3.0 && testX < roomWidth / 2 - 1) {
-    //         createCabinet(testX, roomLength / 2 - 0.3, Math.PI);
-    //     }
-    // }
-
     // LEFT WALL: 8 individual tables 
     const numLeftTables = 8;
     const leftStartZ = -12;
@@ -1733,10 +1658,7 @@ function init() {
         scene.add(desk);
 
         createComputerStation(xPos, deskHeight, zPos, 0);
-
-        // --- CHANGE THIS LINE (0.6 -> 1.0) ---
         createChair(xPos, 0, zPos + individualDeskWidth / 2 + 1.0, 0);
-        // -------------------------------------
     }
 
     // CENTER: single combined table with one channel and 8 strips
@@ -1895,7 +1817,6 @@ function init() {
             const shelfGroup = new THREE.Group();
             const wallThickness = 0.05;
 
-            // Equalize depth: hollow parts now have same depth as cabinets
             const actualDepth = depth;
             const zOffset = 0;
 
@@ -1935,7 +1856,7 @@ function init() {
             rightSide.castShadow = true;
             shelfGroup.add(rightSide);
 
-            // --- INTERNAL SHELVES & DIVIDERS (Spacings) ---
+            //INTERNAL SHELVES & DIVIDERS
             if (config) {
                 // Horizontal Shelves
                 if (config.horizontalShelves > 0) {
@@ -1954,9 +1875,6 @@ function init() {
                     if (config.books && config.books.length > 0) {
                         const compartmentHeight = shelfSpacing;
                         const topCompY = -height / 2 + (config.horizontalShelves + 0.5) * shelfSpacing;
-
-                        // Calculate column width/spacing
-                        // Total width divided by (verticalDividers + 1) columns
                         const colWidth = width / (config.verticalDividers + 1);
 
                         config.books.forEach(bookConfig => {
@@ -1967,9 +1885,6 @@ function init() {
                             const bookGeo = new THREE.PlaneGeometry(colWidth * 0.9, compartmentHeight * 0.85);
                             const bookPlane = new THREE.Mesh(bookGeo, bookConfig.material);
                             bookPlane.scale.set(bookConfScale.x, bookConfScale.y, 1);
-
-                            // Calculate X center for the specific column
-                            // Col 0 center: -width/2 + colWidth/2
                             let centerX = -width / 2 + colWidth / 2 + bookConfig.col * colWidth;
 
                             // Alignment Logic
@@ -2069,15 +1984,6 @@ function init() {
 
         const totalHeight = bottomCabinetHeight + bookshelfHeight + topCabinetHeight + blankTopHeight + 2 * horizontalSeparatorHeight;
         let currentX = -totalTargetWidth / 2;
-
-        // const cornerBlock = new THREE.Mesh(
-        //     new THREE.BoxGeometry(cornerBlockWidth, totalHeight, depth),
-        //     woodMaterial
-        // );
-        // cornerBlock.position.set(currentX + cornerBlockWidth / 2, totalHeight / 2, 0);
-        // cornerBlock.castShadow = true;
-        // group.add(cornerBlock);
-        // currentX += cornerBlockWidth;
 
         // Left Separator (New)
         const separatorLeft = new THREE.Mesh(new THREE.BoxGeometry(separatorWidth, totalHeight, depth), separatorMaterial);
@@ -2186,20 +2092,12 @@ function init() {
         gltfLoader.load('models/air_condition_daikin.glb', function (gltf) {
             const ac = gltf.scene;
             ac.scale.set(1.5, 1.5, 1.5);
-
-            // Position relative to group
-            // X: 0 (Centered)
-            // Y: totalHeight - blankTopHeight / 2 (Centered on blank top)
-            // Z: depth / 2 (Front face of cabinet) + small offset
             ac.position.set(0, totalHeight - blankTopHeight / 2, depth / 2 + 0.2);
 
             ac.traverse(n => { if (n.isMesh) { n.castShadow = true; n.receiveShadow = true; } });
             group.add(ac);
         }, undefined, function (e) { console.error(e); });
 
-        // Anchor calculation: 
-        // Original Center = 4.5, Original Width = 18.0
-        // Anchored Edge (Visual Left/Wall Corner) = 4.5 + (18.0 / 2) = 13.5
         const anchorX = 13.5;
         const newX = anchorX - (totalTargetWidth / 2);
 
@@ -2220,54 +2118,10 @@ function init() {
             collisionObstacles.push(box);
         }
     });
-
-    // --- 1. ADD BACK WALL CABINETS (New!) ---
-    // A row of low storage cabinets under the back window
-
-
-
-    // --- 2. DEFINE THE FUNCTION ---
-    // function createCabinet(x, z, rotationY) {
-    //     const cabGroup = new THREE.Group();
-    //     cabGroup.userData.collidable = true;
-
-    //     // Body
-    //     const body = new THREE.Mesh(new THREE.BoxGeometry(2.0, 1.2, 0.6), cabinetMaterial);
-    //     body.position.y = 0.6;
-    //     body.castShadow = true;
-    //     cabGroup.add(body);
-
-    //     // Gap (Visual detail)
-    //     const gap = new THREE.Mesh(new THREE.BoxGeometry(0.02, 1.1, 0.61), new THREE.MeshStandardMaterial({ color: 0xaaaaaa }));
-    //     gap.position.set(0, 0.6, 0);
-    //     cabGroup.add(gap);
-
-    //     // Handles
-    //     const hGeo = new THREE.BoxGeometry(0.05, 0.2, 0.02);
-    //     const h1 = new THREE.Mesh(hGeo, cabinetHandleMat); h1.position.set(-0.1, 0.9, 0.31); cabGroup.add(h1);
-    //     const h2 = new THREE.Mesh(hGeo, cabinetHandleMat); h2.position.set(0.1, 0.9, 0.31); cabGroup.add(h2);
-
-    //     // Kickplate
-    //     const kick = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.1, 0.58), new THREE.MeshStandardMaterial({ color: 0x333333 }));
-    //     kick.position.set(0, 0.05, 0);
-    //     cabGroup.add(kick);
-
-    //     cabGroup.position.set(x, 0, z);
-    //     cabGroup.rotation.y = rotationY;
-    //     scene.add(cabGroup);
-
-    //     // Add collision box
-    //     scene.updateMatrixWorld(true);
-    //     const box = new THREE.Box3().setFromObject(cabGroup);
-    //     collisionObstacles.push(box);
-    // }
-    // Window resize
     window.addEventListener('resize', onWindowResize, false);
 }
 
-/**
- * Toggles the visibility of all lights in the toggleableLights array.
- */
+//Toggles the visibility of all lights in the toggleableLights array.
 function toggleLights() {
     console.warn('toggleLights is deprecated. Use toggleCoveLights (1) or toggleDownLights (2).');
 }
@@ -2284,7 +2138,7 @@ function animate() {
     const time = performance.now();
     const delta = (time - prevTime) / 1000;
 
-    // --- NEW: RGB ANIMATION ---
+    // RGB ANIMATION
     if (rgbMaterial) {
         // Cycle the Hue (0 to 1) over time. 
         // 0.0005 controls the speed (Smaller = Slower)
@@ -2313,13 +2167,11 @@ function animate() {
         controls.moveForward(-velocity.z * delta);
         controls.getObject().position.y += (velocity.y * delta);
 
-        // 3. COLLISION CHECK (FIXED!)
+        // 3. COLLISION CHECK
         const playerBox = new THREE.Box3();
 
         // We clone the position so we don't move the actual camera
         const bodyPosition = controls.getObject().position.clone();
-
-        // VITAL FIX: Lower the check to torso height (1.5) instead of head height (5.0)
         bodyPosition.y = 1.5;
 
         // Create a box 1m wide and 3m tall
@@ -2395,7 +2247,6 @@ function toggleDownLights() {
     updateDownLightsState();
 }
 
-// --- ADD THIS AT THE BOTTOM OF MAIN.JS ---
 function createKeyboardTexture() {
     const canvas = document.createElement('canvas');
     canvas.width = 512; canvas.height = 256;
@@ -2417,7 +2268,6 @@ function createKeyboardTexture() {
     // A. Main QWERTY Area (Rows of keys)
     for (let row = 0; row < 5; row++) {
         for (let col = 0; col < 13; col++) {
-            // Randomize key width slightly for realism? No, keep simple grid.
             ctx.fillRect(startX + col * (keySize + gap), startY + row * (keySize + gap), keySize, keySize);
         }
     }
